@@ -1,0 +1,38 @@
+# Lines starting with '#' are considered comments.
+# Ignore any file named foo.txt.
+#foo.txt
+.htaccess
+.project
+
+database.php
+individual.css
+ds20kcondb.php
+.project
+
+# Ignore (generated) html files,
+#*.html
+# except foo.html which is maintained by hand.
+#!foo.html
+# Ignore objects and archives.
+#*.[oa]
+
+# Can also ignore all directories and files in a directory.
+tmp/cache/models/*
+tmp/cache/persistent/*
+tmp/cache/views/*
+tmp/logs/*
+tmp/sessions/*
+tmp/tests/*
+.metadata/*
+*.csv
+createACLauto.sh
+createACL.py
+Plugin/JSRootIO
+.pydevproject
+mysqlFunctions.pyc
+tinyServer.py
+tmp/cache
+tmp/files
+webroot/js/jqplot
+.idea
+tmp

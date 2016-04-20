@@ -1,0 +1,1 @@
+<div class="cake-error">No items selected</div>

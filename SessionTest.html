@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="text/javascript">
+    function store() {
+        var key = document.getElementById('key').value;
+        var data = document.getElementById('data').value;
+        localStorage.setItem(key, data);
+      }
+     function read() {
+       var key = document.getElementById('key').value;
+       document.getElementById('data').value = localStorage.getItem(key);
+     }
+    </script>
+</head>
+<body>
+    <textarea id="data"></textarea>
+    <p>
+        <label>key: <input id="key"></label>
+        <input type="button" value="Read" onclick="read()">
+        <input type="button" value="Store" onclick="store()">
+    </p>
+</body>
+</html>

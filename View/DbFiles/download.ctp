@@ -1,0 +1,1 @@
+<?php 	header("X-Sendfile: ".$db_file['DbFile']['filepath']);	header("Content-Type: application/octet-stream");	header("Content-Disposition: attachment; filename=\"".$db_file['DbFile']['name']."\"");	//echo $db_file['DbFile']['filepath'];	//echo $db_file['DbFile']['name'];	exit;?>

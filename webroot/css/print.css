@@ -1,0 +1,59 @@
+@page {
+	size: landscape;
+	margin-top: 1cm;
+	margin-bottom: 1cm;
+	margin-left: 0.5cm;
+	margin-right: 1cm;
+}
+
+#header, #footer, #buttons, .debug, .actions, .paging, div.form, form, img {
+ 	display:none;
+}
+#content{
+	background: #FFF;
+	clear: none;
+	color: #000;
+	padding: 0px 0px 0px 0px;
+	
+	overflow-x: hidden;
+	overflow-y: hidden;
+	width: 100%
+}
+div.actions {
+	float:left;
+	width:0%;
+	padding:0px;
+}
+div.index,
+div.view {
+	float:left;
+	width:100%;
+	padding:10px 2%;
+	border-left:0px;
+}
+a {
+	color: #000;
+	text-decoration: none;
+	font-weight: normal;
+}
+th a {
+	font-weight: bold;
+}
+tr {
+	page-break-inside: avoid;
+}
+body {
+	background: #FFF;
+	color: #000;
+	font-family:'lucida grande',verdana,helvetica,arial,sans-serif;
+	font-size:70%;
+}
+table td {
+ border-bottom:1px solid gray;
+}
+table thead {
+    display: table-header-group;
+}
+table tbody {
+    display: table-row-group;
+}

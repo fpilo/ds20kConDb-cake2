@@ -1,0 +1,13 @@
+@charset "utf-8";
+/*
+ ds20kcondb-test: #aa0000
+ ds20kcondb productive: #003d4c
+*/
+
+body {
+	background: #aa0000;
+}
+
+#verticalmenu {
+	background-color: #aa0000;
+}
