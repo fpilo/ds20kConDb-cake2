@@ -217,8 +217,8 @@ class MFile extends fileReader{
 			$userId = $Session->read('User.User.id');
 
 			$Event = ClassRegistry::init('Events');
-			$eventData = $Event->findByName("Measurement");
-
+			$eventData = $Event->findByName('Measurement');
+			
 			$Items = ClassRegistry::init('Items');
 			$item = $Items->findByCode($this->measurementParameters->itemCode);
 			//Get MeasurementDeviceId from Object
@@ -246,7 +246,10 @@ class MFile extends fileReader{
 			//Gzip original File to save space
 			$this->_gZipFile(MEAS_ORIG.DS.$this->fileFolderFromId($measurementFileId));
 			//Move converted CSV File to converted File Folder(with renaming according to measurement File ID)
-			rename($this->filePath,MEAS_CONV.DS.$this->fileFolderFromId($measurementFileId));
+			if(copy($this->filePath,MEAS_CONV.DS.$this->fileFolderFromId($measurementFileId))){
+				fclose($this->fp);
+				unlink($this->filePath);
+			};
 			//Gzip converted File to save space
 			$this->_gZipFile(MEAS_CONV.DS.$this->fileFolderFromId($measurementFileId));
 			

@@ -1338,18 +1338,17 @@ function _interpretASCII($file, $asciiType){
  * @return void
  */
    public function add($itemId = null) {
-      # debug($this->request);
       $url = Router::url(array('plugin'=>'plupload','controller' => 'plupload', 'action' => 'upload'));
       $this->Plupload->setUploaderOptions(array(
-               'runtimes' => 'html5',
-               //'widget_url' => '/plupload/plupload/widget',
-               'url' => $url,
-            'max_file_size' => Configure::read('Upload.max_file_size'),
-            'chunk_size' => Configure::read('Upload.chunk_size'),
-            'multipart_params' => array(
-                  'data[uploadtype]' => "measurement",
-                  'data[itemId]' => $itemId
-                  )
+		'runtimes' => 'html5',
+        //'widget_url' => '/plupload/plupload/widget',
+        'url' => $url,
+        'max_file_size' => Configure::read('Upload.max_file_size'),
+        'chunk_size' => Configure::read('Upload.chunk_size'),
+        'multipart_params' => array(
+			'data[uploadtype]' => "measurement",
+            'data[itemId]' => $itemId
+        )
       ));
       //Additional callback (javascript) that executes after a file has been uploaded
       $callbackBase = "init: {";

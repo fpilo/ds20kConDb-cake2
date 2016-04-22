@@ -6,29 +6,30 @@
 
 
 <div class="measurements form">
-<h1>Save a Measurement in the Database. </h1>
-<?php if ($itemId != null): echo "<h3>Measurements will be added to item: ";
-echo $this->Html->link($itemCode,array('controller'=>"items",'action'=>"view",$itemId,"#"=>"information"));
-echo "</h3>";
-endif;
-?>
-<h3>The system can currently handle:
-	<ul>
-		<li>CVI and STR files created by LabView at HEPHY</li>
-		<li>CSV files created by APVDAQ Version V0.93 7 July 2014 and later</li>
-		<li>It and IV files of measurements in the climate chamber at HEPHY</li>
-	</ul>
+	<h1>Save a Measurement in the Database. </h1>
+	<?php if ($itemId != null): echo "<h3>Measurements will be added to item: ";
+	echo $this->Html->link($itemCode,array('controller'=>"items",'action'=>"view",$itemId,"#"=>"information"));
+	echo "</h3>";
+	endif;
+	?>
+	<h3>The system can currently handle:
+		<ul>
+			<li>CVI and STR files created by LabView at HEPHY</li>
+			<li>CSV files created by APVDAQ Version V0.93 7 July 2014 and later</li>
+			<li>It and IV files of measurements in the climate chamber at HEPHY</li>
+		</ul>
+		<br />
+	To add new file layouts to the system a file sample is required. <br />
+	Multiple Files can be selected and uploaded at once. <br />
+	It is also possible to upload multiple Files in a .zip Archive at once (Useful for slow connections). <br />
 	<br />
-To add new file layouts to the system a file sample is required. <br />
-Multiple Files can be selected and uploaded at once. <br />
-It is also possible to upload multiple Files in a .zip Archive at once (Useful for slow connections). <br />
-<br />
-Each file generates a preview that then needs to be confirmed. <br />
-Measurements are automatically attached to Items if the item code can be recognized and found in the database<br />
-If an item Code is passed the code is compared to the one in the File and the result is displayed. </h3>
-<?php echo $this->Plupload->loadWidget('jqueryui', array('height' => '330px')); ?>
-
+	Each file generates a preview that then needs to be confirmed. <br />
+	Measurements are automatically attached to Items if the item code can be recognized and found in the database<br />
+	If an item Code is passed the code is compared to the one in the File and the result is displayed. 
+	</h3>
+	<?php echo $this->Plupload->loadWidget('jqueryui', array('height' => '330px')); ?>
 </div>
+
 <div id='verticalmenu'>
 	<h2><?php echo __('Measurement'); ?></h2>
 	<ul>
@@ -40,17 +41,17 @@ If an item Code is passed the code is compared to the one in the File and the re
 	<?php require(dirname(__FILE__).'/../Layouts/menu.ctp'); ?>
 </div>
 
-<div class="measurements form" id="preview">
-
-</div>
+<div class="measurements form" id="preview"></div>
 <div class="measurements" id="debug_output"></div>
 <script type="text/javascript">
 var num = 1;
 function preview(info){
+
 	$.ajax('<?php echo Router::url(array('controller' => 'measurements', 'action' => 'preview')); ?>/'+num,{
 		data: info,
 		type: "POST",
 		success: function(data,textStatus){
+			alert('Successfully called');
 			if(data.substr(0,1)!="<"){
 				$.each($.parseJSON(data),function(id,file){
 					preview({local:file},info,num);
@@ -61,11 +62,14 @@ function preview(info){
 				previewDiv(data,info,num);
 				num += 1;
 			}
-		}
+		},
+		error:function(exception){alert('Exeption:'+exception);}
+
 	});
 
 }
 function previewDiv(data,info,num){
+
 	$("#preview").append("<div class='preview' id='preview_area_"+num+"'></div>");
 	var preview_area = $('#preview_area_'+num);
 	preview_area.hide()
@@ -143,5 +147,6 @@ function previewDiv(data,info,num){
 
 		})
 	});
+
 }
 </script>
