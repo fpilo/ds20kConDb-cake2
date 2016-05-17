@@ -1,5 +1,0 @@
-<?php
-$config['Upload']['path'] = 'C:\\uploads';
-$config['Upload']['max_file_size'] = '1000mb';
-$config['Upload']['chunk_size'] = '2mb';
-?>

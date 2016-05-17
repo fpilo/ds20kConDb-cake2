@@ -5,8 +5,9 @@
 .project
 
 database.php
-individual.css
 ds20kcondb.php
+email.php
+individual.css
 .project
 
 # Ignore (generated) html files,

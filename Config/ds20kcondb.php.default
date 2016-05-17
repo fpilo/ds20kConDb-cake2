@@ -1,0 +1,18 @@
+<?php
+$config['Upload']['path'] = 'C:\\uploads';
+//$config['Upload']['path'] = '/home/users/bleitl/dbfiles';
+$config['Upload']['max_file_size'] = '1000mb';
+$config['Upload']['chunk_size'] = '2mb';
+
+Configure::write("Instance","hephydb");
+
+//Configure Paths for Measurement Storage System:
+define('MEAS_ORIG', "C:\Users\pilo\Documents\Esperimenti\DS20k\dbData\orig"); //Path for original file location
+define('MEAS_CONV', "C:\Users\pilo\Documents\Esperimenti\DS20k\dbData\meas"); //Path for converted files (CSV)
+define('MEAS_TMP', TMP."files"); //Path for the upload file directory during measurement upload, temporary location
+define('MEAS_CACHE',TMP."measurement"); //Path for the storage of the cached, gzipped MeasurementObj dumps
+
+//Configure Paths for Component List uploading:
+define('CMPLIST_TMP', TMP."files"); //Upload file directory during components-list upload, temporary location
+
+?>
