@@ -1,47 +1,51 @@
-   $(document).ready(function(){
-      restoreTabs('ItemSubtypeVersions'+add_or_edit+'TabIndex');
+$(document).ready(function(){
 
-      $('#AddButton').click(function(){
+	restoreTabs('ItemSubtypeVersions'+add_or_edit+'TabIndex');
 
-         if($('#item_subtype_version_id').val() != null) {
-            SendRequest(session_id);
-         } else {
-            $("#dialog").dialog({
-               modal: true,
-               buttons: {
-                  "All Versions": function() {
-                     SendRequest(session_id);
-                     $( this ).dialog( "close" );
-                  },
-                  Cancel: function() {
-                     $( this ).dialog( "close" );
-                  }
-               }
-            });
-         }
-      });
-   });
+	//Add new component
+	$('#AddButton').click(function(){
 
-   function UpdateComponents(component_table){
-      $('#component_table').remove();
-      $('#table_component_subtypes').after(component_table);
-      $("#accordion").accordion( "refresh" )
-   }
+		if($('#item_subtype_version_id').val() != null) {
+			SendRequest(session_id);
+		} else {
+			$("#dialog").dialog({
+				modal: true,
+				buttons: {
+					"All Versions": function() {
+						SendRequest(session_id);
+						$( this ).dialog( "close" );
+					},
+					Cancel: function() {
+						$( this ).dialog( "close" );
+					}
+				}
+				});
+			}
+		});
+		
+	});
+      
+	function UpdateComponents(component_table){
+		$('#component_table').remove();
+		$('#table_component_subtypes').after(component_table);
+		$("#accordion").accordion( "refresh" )
+	}
 
-   function SendRequest(session_id,edit_with) {
-      $.post(
-         '<?php echo $this->Html->url(array('controller' => 'itemSubtypeVersions', 'action' => 'addComponent')); ?>/',
-         {
-            projectId: $('#project_id').val(),
-            projectName: $('#project_id option:selected').text(),
-            itemSubtypeId: $('#item_subtype_id').val(),
-            itemSubtypeVersionId: $('#item_subtype_version_id').val(),
-            session: session_id,
-            editWithAttached: $("#ItemSubtypeVersionEditWithAttached").val()
-         },
-         UpdateComponents
-      );
-   }
+	function SendRequest(session_id,edit_with) {
+		$.post(
+			'<?php echo $this->Html->url(array('controller' => 'itemSubtypeVersions', 'action' => 'addComponent')); ?>/',
+			{
+				projectId: $('#project_id').val(),
+				projectName: $('#project_id option:selected').text(),
+				itemSubtypeId: $('#item_subtype_id').val(),
+				itemSubtypeVersionId: $('#item_subtype_version_id').val(),
+				session: session_id,
+				editWithAttached: $("#ItemSubtypeVersionEditWithAttached").val()
+			},
+			UpdateComponents
+		);
+	}	
+   
    function RemoveComponent(dummy) {
       $.post(
          '<?php echo $this->Html->url(array('controller' => 'itemSubtypeVersions', 'action' => 'removeComponent')); ?>/',

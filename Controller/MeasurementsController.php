@@ -1,4 +1,5 @@
 <?php
+
 App::uses('AppController', 'Controller');
 App::uses('measurementPair','Lib');
 App::uses('MFile','Lib');
@@ -27,6 +28,7 @@ class MeasurementsController extends AppController {
       'limit' => 50,
       'contain' => array("MeasurementQueue","History","Item","Device","User","MeasurementType","MeasurementTag")
    );
+   
 /**
  * index method
  *
@@ -1283,6 +1285,7 @@ function _interpretASCII($file, $asciiType){
  * @return void
  */
    public function preview($previewId){
+
       if(isset($this->request['data']['local'])){
          $filename = $this->request['data']['local'];
       }else{

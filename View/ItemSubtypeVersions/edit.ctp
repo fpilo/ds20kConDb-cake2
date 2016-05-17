@@ -1,10 +1,8 @@
 <?php
-   // $this->Html->addCrumb('Item Types', '/item_types/index/');
    $this->Html->addCrumb($this->data['ItemSubtype']["ItemType"]['name'], '/item_types/view/'.$this->data['ItemSubtype']["ItemType"]['id']);
-   // $this->Html->addCrumb('Item Subtypes', '/item_subtypes/index/');
    $this->Html->addCrumb($this->data['ItemSubtype']['name'], '/item_subtypes/view/'.$this->data['ItemSubtype']['id']);
-   $stVersionName = ($this->data['ItemSubtypeVersion']['name'] != "")? $this->data['ItemSubtypeVersion']['version']." (".$this->data['ItemSubtypeVersion']['name'].")": "v".$this->data['ItemSubtypeVersion']['version'];
-   $this->Html->addCrumb($stVersionName, '/item_subtype_versions/view/'.$this->data['ItemSubtypeVersion']['id']);
+   $itemSubtypeVersionName = ($this->data['ItemSubtypeVersion']['name'] != "")? $this->data['ItemSubtypeVersion']['version']." (".$this->data['ItemSubtypeVersion']['name'].")": "v".$this->data['ItemSubtypeVersion']['version'];
+   $this->Html->addCrumb($itemSubtypeVersionName, '/item_subtype_versions/view/'.$this->data['ItemSubtypeVersion']['id']);
 ?>
 
 <script type="text/javascript">
@@ -53,51 +51,45 @@
 </div>
 
 <div class="itemSubtypeVersions form">
-<?php
-   if(!$editWithAttached) {
-      echo $this->Form->create('ItemSubtypeVersion');
-   } else {
-      echo $this->Form->create('ItemSubtypeVersion',array('onsubmit'=>'return confirm("Components cannot be removed from this configuration after submitting the data. Are you sure you want to continue?");'));
-   }
-   ?>
-   <fieldset>
-      <legend><?php echo __('Edit version ' .$this->Form->value('ItemSubtypeVersion.version'). ' of '.$this->request->data['ItemSubtype']['ItemType']['name'].' - '.$this->request->data['ItemSubtype']['name']); ?></legend>
-      <?php echo $this->Form->input('id');?>
+	<?php
+		if(!$editWithAttached) {
+			echo $this->Form->create('ItemSubtypeVersion');
+		} else {
+			echo $this->Form->create('ItemSubtypeVersion',array('onsubmit'=>'return confirm("Components cannot be removed from this configuration after submitting the data. Are you sure you want to continue?");'));
+		}
+	?>
+	<fieldset>
+		<legend><?php echo __('Edit version ' .$this->Form->value('ItemSubtypeVersion.version'). ' of '.$this->request->data['ItemSubtype']['ItemType']['name'].' - '.$this->request->data['ItemSubtype']['name']); ?></legend>
+		<?php echo $this->Form->input('id');?>
 
-      <div id="tabs" class='related'>
-         <ul>
-            <?php if(!$editWithAttached) { echo '<li><a href="#common">'.__('Common Data').'</a></li>'; } ?>
-            <li><a href="#components"><?php echo __('Components'); ?></a></li>
-         </ul>
+		<div id="tabs" class='related'>
+			<ul>
+				<?php if(!$editWithAttached) { echo '<li><a href="#common">'.__('Common Data').'</a></li>'; } ?>
+				<li><a href="#components"><?php echo __('Components'); ?></a></li>
+			</ul>
 
-         <?php if(!$editWithAttached) { require(dirname(__FILE__).'/edit/common_tab.ctp'); } ?>
+			<?php if(!$editWithAttached) { require(dirname(__FILE__).'/edit/common_tab.ctp'); } ?>
 
-         <div id="components">
-            
-            <?php require(dirname(__FILE__).'/components_tab.ctp'); ?>
-
-            <div align="center" class="actions" >
-            <?php echo $this->Html->link(__('Reload'), array('controller' => 'itemSubtypeVersions', 'action' => 'resetEdit', $this->Form->value('ItemSubtypeVersion.id'))); ?>
-            </div>
-
-            <br>
-            <br>
-         </div>
-      </div>
-   </fieldset>
-
-<?php echo $this->Form->end(__('Submit'));?>
+			<div id="components">
+				<?php require(dirname(__FILE__).'/components_tab.ctp'); ?>
+			</div>
+			
+		</div>
+	</fieldset>
+	<?php echo $this->Form->end(__('Submit'));?>
 </div>
 
 <div id='verticalmenu'>
-   <h2><?php  echo __('Item Subtype Versions');?></h2>
-   <ul>
-      <li class='active' ><?php echo $this->Html->link(__('Cancel'), array('controller' => 'itemSubtypeVersions', 'action' => 'view', $this->Form->value('ItemSubtypeVersion.id'))); ?> </li>
-      <li class='active last'><?php echo $this->Form->postLink(__('Delete'), array(
-                     'action' => 'delete',
-                     $this->Form->value('ItemSubtypeVersion.id')),
-                     null,
-                     __('Are you sure you want to delete version '.$this->Form->value('ItemSubtypeVersion.version').' from '.$this->Form->value('ItemSubtype.ItemType.name').' '.$this->Form->value('ItemSubtype.name').'?')); ?></li>
-   </ul>
+	<h2><?php  echo __('Item Subtype Versions');?></h2>
+	<ul>
+		<li class='active first' ><?php echo $this->Html->link(__('Cancel'), array('controller' => 'itemSubtypeVersions', 'action' => 'view', $this->Form->value('ItemSubtypeVersion.id'))); ?></li>
+	    <li class='has-sub'><a href='#components'>Add component</a>
+			<ul>
+				<li class='active'><?php echo $this->Html->link(__('Single'), array('controller' => 'itemSubtypeVersions', 'action' => 'view', $this->Form->value('ItemSubtypeVersion.id'))); ?></a></li>
+				<li class='active last'><?php echo $this->Html->link(__('Multiple'), array('controller' => 'itemSubtypeVersions', 'action' => 'view', $this->Form->value('ItemSubtypeVersion.id'))); ?></a></li>
+			</ul>
+		</li>
+		<li class='active last'><?php echo $this->Html->link(__('Reload'), array('controller' => 'itemSubtypeVersions', 'action' => 'resetEdit', $this->Form->value('ItemSubtypeVersion.id'))); ?></li>
+	</ul>
    <?php require(dirname(__FILE__).'/../Layouts/menu.ctp'); ?>
 </div>

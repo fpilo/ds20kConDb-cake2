@@ -8,16 +8,16 @@ App::uses('ItemParams','Lib');
 App::uses('MTags','Lib');
 
 /**
- *	Represents a Measurement File stored in the standard CSV format
- *	By extension defines a grouped measurement
+ *	Represents a component-List File stored in the standard CSV format
  *	
  */
-class MFile extends fileReader{
+class CmpListFile extends fileReader{
+	
 	//Properties
 	private $measurementDevice;
 	private $measurements = array(); //Associative Array of measurement Objects
 	private $measurementFileId = null;
-	private $infoSections = array("info","tags","parameters","apv25"); //Added apv25 since it is the FIR filter section in the most common apvdaq csv files and should not be imported per default but only displayed in case the viewed measurement is an apvdaq measurement. 
+	private $infoSections = array("info");
 	
 	protected $sections = array();
 	protected $markers = array();
@@ -29,69 +29,50 @@ class MFile extends fileReader{
 	protected $originalFileName;
 	
 	
-	
 	function __construct($param = null,$originalFileName=null){
 		if(is_numeric($param)){
-			$this->initFromDB($param,$originalFileName);
+			$this->_initFromDB($param,$originalFileName);
 		}elseif($param != null){
-			$this->init($param,$originalFileName);
+			$this->_init($param,$originalFileName);
 		}
 	}
 	
-	private function init($fileName,$originalFileName=null){
+	protected function _init($fileName,$originalFileName=null){
+		
 		if(!parent::__construct($fileName)){
-			throw new NotFoundException("File ".$fileName." could not be found, that's bad");
+			throw new NotFoundException(__("File ".$fileName." could not be found, that's bad"));
 		}
 		if($originalFileName != null){
 			$this->originalFileName = basename($originalFileName);
 		}
-		$this->findSections();
+		$this->_findSections();
 		if($this->error){
 			return false;
 		}
+		
 		//Get Measurement Parameters
-		if(!$this->fromDB){ //Check if from db and if no get the tags and parameters from the file
+		/*if(!$this->fromDB){ //Check if from db and if no get the tags and parameters from the file
 		
 			$tmp = $this->getSectionAsArray("info");
 			foreach($tmp[0] as $id=>$name){
 				$parameters[$name] = $tmp[1][$id];
 			}
 			$this->measurementParameters = new MParameters($parameters);
-			
-			//Check if Measurement Tags are set and store them
-			if($this->inSections("tags")){
-				$tmp = $this->getSectionAsArray("tags");
-				if(count($tmp)>0){
-					$this->measurementTags = new MTags($tmp[0]);
-				}else{
-					$this->measurementTags = new MTags(array());
-				}
-			}else{
-				$this->measurementTags = new MTags(array());
-			}
 		
-			if($this->inSections("parameters")){
-				$tmp = $this->getSectionAsArray("parameters");
-				$parameters = array();
-				foreach($tmp[0] as $id=>$name){
-					$parameters[$name] = $tmp[1][$id];
-				}
-				$this->itemParameters = new ItemParams($parameters);
-			}
-			
-		}
+		}*/
 		return true;
 	}
 
-	private function initFromDB($measurementId,$originalFileName){
+	protected function _initFromDB($measurementId,$originalFileName){
 		$Measurement = ClassRegistry::init('MeasurementFile');
 		$measurement = $Measurement->findById($measurementId);
 		$this->fromDB = true;
 		$this->measurementFileId = $measurement["MeasurementFile"]["id"];
-		return $this->init(MEAS_CONV.DS.$this->fileFolderFromId($this->measurementFileId),$originalFileName);
+		return $this->_init(MEAS_CONV.DS.$this->fileFolderFromId($this->measurementFileId),$originalFileName);
 	}
 	
-	private function findSections(){
+	protected function _findSections(){
+		
 		$line = 1;
 		$match = 0;
 		$matches = array();
@@ -108,17 +89,7 @@ class MFile extends fileReader{
 			$line++;
 		}
 		$this->sections[$match-1]["lastline"] = $line-1;
-		$MeasurementType = ClassRegistry::init('MeasurementType');
-		//Find the measurementType for each section marker
-		foreach($this->sections as $id=>$section){
-			if(in_array($section["name"],$this->infoSections)) continue;
-			$mmType = $MeasurementType->findByMarker($section["name"]);
-			if(isset($mmType["MeasurementType"])){
-				$this->sections[$id]["MeasurementType"] = $mmType["MeasurementType"];
-			}else{
-				$this->setError("Section marker '".$section["name"]."' is not assigned to a Measurement Type.",$section);
-			}
-		}
+
 	}
 	
 	public function setTags($tags){
@@ -129,7 +100,7 @@ class MFile extends fileReader{
 		$this->measurementDevice = $setupId;
 	}
 	
-	public function getMeasurementSections(){
+	public function getSections(){
 		$return = array();
 		foreach($this->sections as $id=>$section){
 			if(!in_array($section["name"],$this->infoSections)){
@@ -139,15 +110,11 @@ class MFile extends fileReader{
 		return $return;
 	}
 	
-	private function inSections($item){
+	protected function inSections($item){
 		foreach($this->sections as $id=>$array){
 			if($item == $array["name"]) return true;
 		}
 		return false;
-	}
-	
-	public function getSections(){
-		return $this->sections;
 	}
 	
 	public function getSectionAsArray($sectionName,&$target=null){
@@ -155,9 +122,9 @@ class MFile extends fileReader{
 			if($section["name"] == $sectionName){
 #				return $this->getRows($section["firstline"],$section["lastline"]);
 				if($target !== null){
-					$target = array_map(array($this,"_interpretCsvRow"),$this->getRows($section["firstline"],$section["lastline"]));
+					$target = array_map(array($this,"_interpretCsvRow"), $this->getRows($section["firstline"], $section["lastline"]));
 				}else{
-					return array_map(array($this,"_interpretCsvRow"),$this->getRows($section["firstline"],$section["lastline"]));
+					return array_map(array($this,"_interpretCsvRow"), $this->getRows($section["firstline"], $section["firstline"]+2));//$section["lastline"]));
 				}
 			}
 		}
@@ -183,6 +150,7 @@ class MFile extends fileReader{
 	}
 	
 	public function getSectionAsMeasurement($sectionName,$useCache=true,$id=null){
+		
 		if(!isset($this->measurements[$sectionName]) || !$useCache){
 			if(!$useCache){
 				return new MeasurementObj($sectionName,$this->measurementTags,$this->measurementParameters,$id,$this); //$this->markers[$sectionName],
@@ -199,7 +167,6 @@ class MFile extends fileReader{
 	}
 	
 	private function _interpretCsvRow($string){
-#		$tmp = array_map('trim',explode(",",$string));
 		$tmp = str_getcsv($string,",",'"');
 		foreach($tmp as $id=>$value){
 			if(is_numeric($value)){

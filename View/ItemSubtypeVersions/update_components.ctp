@@ -11,13 +11,15 @@
 	<th>Subtype</th>
 	<th>Version</th>
 	<th>Comment</th>
+	<th>PosName</th>
 	<th>Position</th>
 	<th>Attached at delivery</th>
-   <th>Is a stock item</th>
-   <th>Allow other versions</th>
+	<th>Is a stock item</th>
+	<th>Allow other versions</th>
 	<th>Actions</th>
 </tr>
 <?php if(!empty($myComponents)): ?>
+<?php //debug($myComponents); ?>
 <?php foreach($myComponents as $dummy => $component): ?>
 <tr>
 	<td>
@@ -35,6 +37,10 @@
 	<td><?php echo $component['ItemSubtypeVersion']['version']; ?></td>
 	<td><?php echo $component['ItemSubtypeVersion']['comment']; ?></td>
 	<td>
+		<?php echo $this->Form->hidden('SubtypeComponent.'.$dummy.'.position_name', array('value' => $component['ItemSubtypeVersionsComposition']['position_name'])) ?>
+		<?php echo $component['ItemSubtypeVersionsComposition']['position_name']; ?>
+	</td>
+	<td>
 		<?php
          if(!empty($component['ItemSubtypeVersionsComposition']['position'])) {
             $value = $component['ItemSubtypeVersionsComposition']['position'];
@@ -49,6 +55,7 @@
 																					'value' => $value,
 																					'div' => false,
 																					'onchange' => 'PositionChanged(this)')); ?>
+		
 		<?php echo $this->Form->hidden('SubtypeComponent.'.$dummy.'.component_id', array('value' => $component['ItemSubtypeVersion']['id'])) ?>
 	</td>
 	<td>

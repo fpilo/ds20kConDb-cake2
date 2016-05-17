@@ -1,5 +1,11 @@
 <?php
+
 App::uses('AppController', 'Controller');
+App::uses('CmpListFile','Lib');
+App::uses('FileFormatRecognizer','Lib');
+
+ini_set("memory_limit", "2048M");
+
 /**
  * ItemSubtypeVersions Controller
  *
@@ -7,27 +13,33 @@ App::uses('AppController', 'Controller');
  */
 class ItemSubtypeVersionsController extends AppController {
 
-	public $components = array('RequestHandler');
+	public $components = array('Session','Parser','RequestHandler','Plupload.Plupload');
+	public $helpers = array('Session','Plupload.Plupload','Html');
 
-/**
- * index method
- *
- * @return void
- */
+	private $fileType = "";
+	private $fileInfo = array();
+
+	/**
+	 * index method
+	 *
+	 * @return void
+	 */
 	public function index() {
 		$this->ItemSubtypeVersion->recursive = 0;
 		$this->set('itemSubtypeVersions', $this->paginate());
 	}
 
-/**
- * view method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * view method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function view($id = null) {
+		
 		$this->ItemSubtypeVersion->id = $id;
 		$measurements = array();
+		
 		if (!$this->ItemSubtypeVersion->exists()) {
 			throw new NotFoundException(__('Invalid item subtype version'));
 		}
@@ -42,12 +54,13 @@ class ItemSubtypeVersionsController extends AppController {
 																						'Item',
 																						'Component.ItemSubtype.ItemType',
 																						'Component.Manufacturer')));
-      //debug($itemSubtypeVersion);
+
 		$componentProjects = $this->ItemSubtypeVersion->Project->find('list');
 		foreach($itemSubtypeVersion['Component'] as $key => $myComponent) {
 			$itemSubtypeVersion['Component'][$key]['ItemSubtypeVersionsComposition']['project_name'] = $componentProjects[$myComponent['ItemSubtypeVersionsComposition']['project_id']];
 		}
 
+		/*
 		$bla = $this->ItemSubtypeVersion->Item->Measurement->MeasurementType->findByName("Strip Measurement","MeasurementType.id");
 		$stripMeasurementTypeId = $bla["MeasurementType"]["id"];
 		$bla = $this->ItemSubtypeVersion->Item->Measurement->MeasurementType->findByName("Strip errors","MeasurementType.id");
@@ -134,12 +147,13 @@ class ItemSubtypeVersionsController extends AppController {
                $measurements[$temp["measurement_id"]] = $temp;
             }
 			}
-		}
+		}*/
+		$measurements = array(); $previousBatch = array();
 		$this->set(compact("measurements","previousBatch"));
 		$this->set('itemSubtypeVersion', $itemSubtypeVersion);
 	}
 
-	private function _checkPosition($myComponents) {
+	protected function _checkPosition($myComponents) {
 		if(!empty($myComponents)) {
 			foreach($myComponents as $key => $myComponent) {
 				$position = $myComponent['position'];
@@ -153,11 +167,11 @@ class ItemSubtypeVersionsController extends AppController {
 		return true;
 	}
 
-/**
- * add method
- *
- * @return void
- */
+	/**
+	 * add method
+	 *
+	 * @return void
+	 */
 	public function add($id) {
 		$User = ClassRegistry::init('User');
 
@@ -298,12 +312,12 @@ class ItemSubtypeVersionsController extends AppController {
 		return $this->redirect(array('controller' => 'ItemSubtypeVersions', 'action' => 'edit', $item_subtype_version_id));
 	}
 
-/**
- * editComment method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * editComment method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function editComment($id = null) {
 		$this->ItemSubtypeVersion->id = $id;
 		if (!$this->ItemSubtypeVersion->exists()) {
@@ -338,12 +352,13 @@ class ItemSubtypeVersionsController extends AppController {
 			$this->request->data = $itemSubtypeVersion;
 		}
 	}
-/**
- * editName method
- *
- * @param string $id
- * @return void
- */
+	
+	/**
+	 * editName method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function editName($id = null) {
 		$this->ItemSubtypeVersion->id = $id;
 		if (!$this->ItemSubtypeVersion->exists()) {
@@ -379,19 +394,47 @@ class ItemSubtypeVersionsController extends AppController {
 		}
 	}
 
-/**
- * edit method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * edit method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function edit($id = null) {
+
 		$User = ClassRegistry::init('User');
+		
+		$url = Router::url(array('plugin'=>'plupload','controller' => 'plupload', 'action' => 'upload'));
+		$this->ItemSubtypeVersion->id = $id;		
+		$this->Plupload->setUploaderOptions(array(
+			'runtimes' => 'html5',
+			'url' => $url,
+			'max_file_size' => Configure::read('Upload.max_file_size'),
+			'chunk_size' => Configure::read('Upload.chunk_size'),
+			'multipart_params' => array(
+				'data[uploadtype]' => "cmpList",
+				'data[itemId]' => $id
+			)
+		));
+
+		//Additional callback (javascript) that executes after a file has been uploaded
+		$callbackBase = "init: {";
+		$callbackFunction = "FileUploaded: function(up, file, info) {
+			// Called when a file has finished uploading
+			//Get filename from response
+			var filename = $.parseJSON(info.response).local;
+			//call saveData function
+			parent.saveData($.parseJSON(info.response));
+		},";
+		$callbackTail = "}";
+		$additionalCallbacks = $callbackBase.$callbackFunction.$callbackTail;
+		$this->Session->write('additionalCallbacks', $additionalCallbacks);
+		  
 
       // see if there exist any items of this subtypeVersion, if yes need to disallow removal of components
 		$count_items = $this->ItemSubtypeVersion->Item->find('count', array(
 								'conditions' => array('Item.item_subtype_version_id' => $id)));
-      $editWithAttached = ($count_items>0);
+		$editWithAttached = ($count_items>0);
 
 		$this->ItemSubtypeVersion->id = $id;
 		if (!$this->ItemSubtypeVersion->exists()) {
@@ -399,6 +442,7 @@ class ItemSubtypeVersionsController extends AppController {
 		}
 
 		if ($this->request->is('post') || $this->request->is('put')) {
+			
 			unset($this->ItemSubtypeVersion->validate['version']);
 			unset($this->ItemSubtypeVersion->validate['has_components']);
 			unset($this->ItemSubtypeVersion->validate['item_subtype_id']);
@@ -432,7 +476,7 @@ class ItemSubtypeVersionsController extends AppController {
 			unset($this->request->data["Item"]);
 
 			if($position_check) {
-				//debug($this->request->data);
+				
 				if ($this->ItemSubtypeVersion->save($this->request->data)) {
 					$this->Session->delete('editItemSubtypeVersion.'.$id);
 					
@@ -464,7 +508,7 @@ class ItemSubtypeVersionsController extends AppController {
 
 
 		$this->request->data = $itemSubtypeVersion;
-
+		
 		$itemSubtype = $itemSubtypeVersion['ItemSubtype'];
 
 		if(!$this->Session->check('editItemSubtypeVersion.'.$id)) {
@@ -531,22 +575,22 @@ class ItemSubtypeVersionsController extends AppController {
       $list_states = $this->ItemSubtypeVersion->Item->State->find('list');
 
 		$this->set(compact('editWithAttached',
-                     'itemSubtypeVersions',
-                     'list_states',
-							'predecessor',
-							'common_projects',
-							'common_manufacturers',
-							'common_comment',
-							'component_projects',
-							'component_manufacturers',
-							'component_item_types',
-							'component_item_subtypes',
-							'component_item_subtype_versions',
-							'myComponents'));
+			'itemSubtypeVersions',
+            'list_states',
+			'predecessor',
+			'common_projects',
+			'common_manufacturers',
+			'common_comment',
+			'component_projects',
+			'component_manufacturers',
+			'component_item_types',
+			'component_item_subtypes',
+			'component_item_subtype_versions',
+			'myComponents')
+		);
 	}
 
-	private function _restoreFormValues( &$data, &$common_projects,	&$common_manufacturers,	&$common_comment, &$component_projects,
-		&$component_manufacturers, &$component_item_types, &$component_item_subtypes, &$component_item_subtype_versions) {
+	protected function _restoreFormValues( &$data, &$common_projects,	&$common_manufacturers,	&$common_comment, &$component_projects, &$component_manufacturers, &$component_item_types, &$component_item_subtypes, &$component_item_subtype_versions) {
 
 		$sName = 'FormItemSubtypeVersionEdit';
 		$session = ($this->Session->check($sName)) ? $this->Session->read($sName) : array();
@@ -589,12 +633,12 @@ class ItemSubtypeVersionsController extends AppController {
 		}
 	}
 
-/**
- * delete method
- *
- * @param string $id
- * @return if delete was a success TRUE else FALSE
- */
+	/**
+	 * delete method
+	 *
+	 * @param string $id
+	 * @return if delete was a success TRUE else FALSE
+	 */
 	public function delete($id = null) {
 		/*
 		if (!empty($this->request->data)) {
@@ -672,57 +716,65 @@ class ItemSubtypeVersionsController extends AppController {
 	}
 
 	public function addComponent() {
+		
 		$myComponents = array();
 
 		if($this->RequestHandler->isAjax()) {
 			if(isset($this->request->data["editWithAttached"]) && $this->request->data["editWithAttached"]==1) {
-			   $this->set("editWithAttached",true);
+				$this->set("editWithAttached",true);
 			} else {
-		      $this->set("editWithAttached",false);
-         }
+				$this->set("editWithAttached",false);
+			}
 			$session = $this->request->data['session'];
 			$myComponents = $this->Session->read($session);
-         $next_position = 1;
-         foreach($myComponents as $component) {
-            if($component['ItemSubtypeVersionsComposition']['position']>=$next_position) {
-               $next_position = 1 + $component['ItemSubtypeVersionsComposition']['position'];
-            }
-         }
+			$next_position = 1;
+			foreach($myComponents as $component) {
+				if($component['ItemSubtypeVersionsComposition']['position']>=$next_position) {
+					$next_position = 1 + $component['ItemSubtypeVersionsComposition']['position'];
+				}
+			}
+			
 			$id = $this->request->data['itemSubtypeVersionId'];
-         if($id=='') {
-			   $subtypeid = $this->request->data['itemSubtypeId'];
-            $tmp = $this->ItemSubtypeVersion->find('first', array('conditions'=>array('ItemSubtype.id' => $subtypeid)));
-            $this->request->data['itemSubtypeVersionId'] = array($tmp['ItemSubtypeVersion']['id']);
-            $add_as_all_versions = true;
-         } else {
-            $add_as_all_versions = false;
-         }
+			if($id=='') {
+				$subtypeid = $this->request->data['itemSubtypeId'];
+				$tmp = $this->ItemSubtypeVersion->find('first', array('conditions'=>array('ItemSubtype.id' => $subtypeid)));
+				$this->request->data['itemSubtypeVersionId'] = array($tmp['ItemSubtypeVersion']['id']);
+				$add_as_all_versions = true;
+			} else {
+				$add_as_all_versions = false;
+			}
 
 			$project_id = $this->request->data['projectId'];
 			$project_name = $this->request->data['projectName'];
-         
-         if( ($project_id != null) && ($project_name != null) ) {
-            foreach($this->request->data['itemSubtypeVersionId'] as $id) {
-               $this->ItemSubtypeVersion->id = $id;
-               if($this->ItemSubtypeVersion->exists() ) {
-                  $myComponent = $this->ItemSubtypeVersion->find('first', array(
+			if(isset($this->request->data['positionName'])) $position_name = $this->request->data['positionName'];
+			else $position_name = null;
+			
+			if( ($project_id != null) && ($project_name != null) ) {
+				if(!is_array($this->request->data['itemSubtypeVersionId'])){
+					$itemSubtypeVersionId = array($this->request->data['itemSubtypeVersionId']);
+					$this->request->data['itemSubtypeVersionId'] = $itemSubtypeVersionId;
+				}
+				foreach($this->request->data['itemSubtypeVersionId'] as $id) {
+					$this->ItemSubtypeVersion->id = $id;
+					if($this->ItemSubtypeVersion->exists() ) {
+						$myComponent = $this->ItemSubtypeVersion->find('first', array(
                                           'conditions' => array('ItemSubtypeVersion.id' => $id),
                                           'contain' => array('Manufacturer', 'ItemSubtype.ItemType')));
-                  $myComponent['ItemSubtypeVersionsComposition']['project_id'] = $project_id;
-                  $myComponent['ItemSubtypeVersionsComposition']['project_name'] = $project_name;
-                  $myComponent['ItemSubtypeVersionsComposition']['attached'] = 0;
-                  $myComponent['New'] = true;
-                  $myComponent['ItemSubtypeVersionsComposition']['position'] = $next_position;
-                  $myComponent['ItemSubtypeVersionsComposition']['all_versions'] = $add_as_all_versions;
+						$myComponent['ItemSubtypeVersionsComposition']['project_id'] = $project_id;
+						$myComponent['ItemSubtypeVersionsComposition']['project_name'] = $project_name;
+						$myComponent['ItemSubtypeVersionsComposition']['attached'] = 0;
+						$myComponent['New'] = true;
+						$myComponent['ItemSubtypeVersionsComposition']['position'] = $next_position;
+						if(!is_null($position_name)) $myComponent['ItemSubtypeVersionsComposition']['position_name'] = $position_name;
+						$myComponent['ItemSubtypeVersionsComposition']['all_versions'] = $add_as_all_versions;
                      
-         
-                  if(!empty($myComponent)) {
-                     $myComponents[] = $myComponent;
-                     $this->Session->write($session, $myComponents);
-                  }
-               }
-            }
-         }
+						if(!empty($myComponent)) {
+							$myComponents[] = $myComponent;
+							$this->Session->write($session, $myComponents);
+						}
+					}
+				}
+			}
 		}
 		$this->set('myComponents', $myComponents);
 		$this->render('update_components', 'ajax');
@@ -779,5 +831,191 @@ class ItemSubtypeVersionsController extends AppController {
 			$this->render('subselect_changed', 'ajax');
 		}
 	}
+	
+	/**
+	* _checkData method
+	*
+	* Designed to check the Data and present a preview of the received data for user validation before the data is stored
+	*
+	* @return organizedData fileContainer object offering functions to get cols and a preview
+	*/
+	protected function _checkData($fileName) {
+	   
+		//Check if the file exists
+		$this->fileInfo["name"] = $fileName;
+		$fp = @fopen(CMPLIST_TMP.DS.$fileName, "r");
+		if($fp == null){
+			$this->set("message","File not found");
+			throw new Exception(__("File not found"));
+		}
+		fclose($fp);
+		
+		//Get file mime type
+		$fi = new finfo(FILEINFO_MIME_TYPE);
+		$mime = $fi->file(CMPLIST_TMP.DS.$fileName);
+		$this->fileInfo["mime"] = $mime;
+		
+		//Only csv and plain text files are currently analysed
+		switch($mime){	
+			case "text/csv":
+			case "text/plain":
+				//If file is csv or textplain call _identifyData to try and figure out which format was used.
+				$ffr = new FileFormatRecognizer($fileName);
+				if($ffr->foundMatch){ //Found a matching function and converted the file
+					$cmpListFile = new CmpListFile($ffr->convertedFilePath,$ffr->originalFilePath);
+					if($cmpListFile->error){
+						$message = "";
+						foreach($cmpListFile->errors as $error){
+							$message .= $error["msg"]."<br />";
+						}
+						$this->set("message",$message);
+						return false;
+					}
+
+					/*$previewData = array();
+					if(isset($this->request["data"]["itemId"])) {
+						$itemSubtypeId = $this->request["data"]["itemId"];
+						//add item_id to parameters of fileContainers
+						$conditions = array(
+							'ItemSubtype.id' => $itemSubtypeId
+						);
+					}
+					$previewData["ItemSubtypeName"] = $this->ItemSubtypeVersion->ItemSubtype->field('name', $conditions);
+					$previewData["passedCode"] = true;*/
+
+					//INSERIRE RICONOSCIMENTO DEL SUBITEMTYPE FATTO CON IL CODICE
+
+				}else{
+					$this->set("message","File appears to contain text but was not recognized as an expected layout");
+					return false;
+				}
+
+				$this->fileType = $ffr->match;
+				//$this->set("cmpListFile",$cmpListFile);
+				//$this->set("previewData",$previewData);
+
+				break;
+			default:
+				//If failed return empty array and error message
+				$this->set("message","File format $mime was not recognized");
+				return false;
+		}
+		
+		return $cmpListFile;
+
+	}
+
+	/**
+	 * getComponents method
+	 *
+	 * @return void
+	 */
+	public function getComponents(){
+		
+		if(isset($this->request['data']['local'])){
+			//User Request, just add file name to database and notify script to deal with the rest
+			$fileName = $this->request['data']['local'];
+		}else{
+			throw new NotFoundException(__("Couldn't find file pointer, abort"));  //Comment this to debug the function
+		}
+
+		$cmpListFile = $this->_checkData($fileName);
+		if($cmpListFile !== false){
+			if($cmpListFile instanceof cmpListFile){
+				
+				$this->ItemSubtypeVersion->id = $this->request['data']['itemId'];
+				if (!$this->ItemSubtypeVersion->exists()) {
+					throw new NotFoundException(__('Invalid item subtype version'));
+				}
+				$parentItemSubtypeVersion = $this->ItemSubtypeVersion->find('first', array(
+					'conditions' => array('ItemSubtypeVersion.id' => $this->request['data']['itemId']),
+					'contain' => array(
+						'Manufacturer',
+						'Project',
+						'ItemSubtype.ItemType',
+						'ItemSubtype.DbFile.User',
+						'DbFile.User',
+						'Item',
+						'Component.ItemSubtype.ItemType',
+						'Component.Manufacturer'
+					)
+				));
+				
+				$projectId = $parentItemSubtypeVersion['Project'][0]['id'];
+				$projectName = $parentItemSubtypeVersion['Project'][0]['name'];
+				
+				foreach($cmpListFile->getSections() as $section){
+					$fileData = $cmpListFile->getSectionAsArray($section["name"]); //RIGUARDARE QUESTO LOOP, CHECK SU FILEDATA!!!
+				
+					$formData = array(); $firstRow = true;
+					foreach($fileData as $key_val => $value) {
+						if (is_array($value) == 1){   // array is multidimensional
+						
+							$formRow = array();
+							if($firstRow){
+								
+								$formRow[] = "ProjectId";
+								$formRow[] = "ProjectName";
+								$formRow[] = "ItemSubtypeId";
+								$formRow[] = "ItemSubtypeVersionId";
+								$formRow[] = "DEV.NAME";
+								$formRow[] = "Position";
+								$firstRow = false;
+							}
+							else{
+								
+								$formRow[] = $projectId;
+								$formRow[] = $projectName;
+								
+								//Throw error if item type/subtype/subtypeversion don't exist in DB
+								$itemTypeName = "SiPM_".substr($value[0],3)."_".$value[3];
+								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->ItemType->recursive = -1;	
+								$itemType = $this->ItemSubtypeVersion->ItemSubtype->ItemType->find("first", array("conditions" => array("ItemType.name" => $itemTypeName)));
+								if(empty($itemType)){
+									$this->set("message","wrong ItemType name. ItemType not found in DB.");
+									throw new Exception(__("wrong ItemType name. ItemType not found in DB."));
+								}
+								
+								$itemSubtypeName = $value[4]."_".$value[2]."u";
+								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->recursive = -1;	
+								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->find("first", array("conditions" => array("ItemSubtype.name" => $itemSubtypeName)));
+								if(empty($itemSubtype)){
+									$this->set("message","wrong ItemSubtype name. ItemSubtype not found in DB.");
+									throw new Exception(__("wrong ItemSubtype name. ItemSubtype not found in DB."));
+								}
+								else $formRow[] = $itemSubtype['ItemSubtype']['id'];
+								
+								$itemSubtypeVersionVersion = $value[5];
+								$itemSubtypeVersion = $this->ItemSubtypeVersion->find("first", array("conditions" => array("ItemSubtypeVersion.version" => $itemSubtypeVersionVersion)));
+								if(empty($itemSubtypeVersion)){
+									$this->set("message","wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB.");
+									throw new Exception(__("wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB."));
+								}
+								else $formRow[] = $itemSubtypeVersion['ItemSubtypeVersion']['id'];
+								
+								$formRow[] = substr($value[6],7);
+								$formRow[] = $key_val; //Position is just the row number (headers row removed, starting from 1)
+							}
+							$formData[] = $formRow;
+							
+						}
+					}
+
+					$this->set("fileData",$fileData);
+					$this->set("formData",$formData);
+					
+				}
+
+				$this->set("fileInfo",$this->fileInfo);
+				
+			}
+		}
+		else{
+			$this->set("message","_checkData function returned false");
+			throw new Exception(__("_checkData function returned false"));
+		}
+		
+	}
+
 }
 

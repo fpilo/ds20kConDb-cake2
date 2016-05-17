@@ -44,9 +44,12 @@ class PluploadController extends PluploadAppController {
 		if(isset($this->request['data']['uploadtype'])){
 			if($this->request['data']['uploadtype'] == "measurement"){
 				$this->_upload_measurement();
+			}elseif($this->request['data']['uploadtype'] == "cmpList"){
+				$this->_upload_cmpList();
 			}elseif($this->request['data']['uploadtype'] == "file"){
 				$this->_upload_attachmentfile();
-			}
+			}else 
+				$this->set('response', array('code' => 101, 'message' => 'Failed before upload.'));
 		}else{
 			$this->set('response', array('code' => 101, 'message' => 'Failed before upload.'));
 		}
@@ -67,6 +70,22 @@ class PluploadController extends PluploadAppController {
 			$return["itemId"] = $this->request["data"]["itemId"];
 		$this->set("response",$return);
 	}
+
+/**
+ * _upload_cmpList
+ * Handles components list uploads by passing a parameter of where to save cmpList files temporary
+ * returns a request object that allows for ajax to request a preview
+ */
+
+
+	function _upload_cmpList(){
+		$result = $this->_upload_file(CMPLIST_TMP);
+		$return["local"] = $result["fileName"];
+		if(isset($this->request["data"]["itemId"]))
+			$return["itemId"] = $this->request["data"]["itemId"];
+		$this->set("response",$return);
+	}
+
 /**
  * _upload_attachmentfile
  * saves a file as an attachment to an item
@@ -245,10 +264,10 @@ class PluploadController extends PluploadAppController {
 		}
 	}
 
-/**
- * widget
- * @param string $ui jquery | jquryui
- */
+	/**
+	 * widget
+	 * @param string $ui jquery | jquryui
+	 */
 	public function widget($ui = "jqueryui") {
 		$this->set('ui', $ui);
 		$additionalCallbacks = $this->Session->read('additionalCallbacks');

@@ -51,7 +51,6 @@ function preview(info){
 		data: info,
 		type: "POST",
 		success: function(data,textStatus){
-			alert('Successfully called');
 			if(data.substr(0,1)!="<"){
 				$.each($.parseJSON(data),function(id,file){
 					preview({local:file},info,num);
@@ -68,6 +67,7 @@ function preview(info){
 	});
 
 }
+
 function previewDiv(data,info,num){
 
 	$("#preview").append("<div class='preview' id='preview_area_"+num+"'></div>");
@@ -75,11 +75,13 @@ function previewDiv(data,info,num){
 	preview_area.hide()
 	preview_area.html(data);
 	preview_area.fadeIn(500);
+
 	preview_area.find(".delete_measurement").each(function(){
 		$(this).click(function(){
 			$(this).parent().parent().remove();
 		});
 	});
+
 	preview_area.find(".measurementTag, .measurementDevice").each(function(){
 		$(this).click(function(){
 			if($(this).hasClass("selected")){

@@ -1,7 +1,5 @@
 <?php
-	// $this->Html->addCrumb('Item Types', '/item_types/index/');
 	$this->Html->addCrumb($itemSubtypeVersion['ItemSubtype']["ItemType"]['name'], '/item_types/view/'.$itemSubtypeVersion['ItemSubtype']["ItemType"]['id']);
-	// $this->Html->addCrumb('Item Subtypes', '/item_subtypes/index/');
 	$this->Html->addCrumb($itemSubtypeVersion['ItemSubtype']['name'], '/item_subtypes/view/'.$itemSubtypeVersion['ItemSubtype']['id']);
 	$stVersionName = ($itemSubtypeVersion['ItemSubtypeVersion']['name'] != "")? $itemSubtypeVersion['ItemSubtypeVersion']['version']." (".$itemSubtypeVersion['ItemSubtypeVersion']['name'].")": "v".$itemSubtypeVersion['ItemSubtypeVersion']['version'];
 	$this->Html->addCrumb($stVersionName, '/item_subtype_versions/view/'.$itemSubtypeVersion['ItemSubtypeVersion']['id']);
@@ -310,6 +308,7 @@
 			<tr>
 				<!--<th><?php //echo __('Id'); ?></th>-->
 				<th><?php echo __('Position'); ?></th>
+				<th><?php echo __('PosName'); ?></th>
 				<th><?php echo __('Type'); ?></th>
 				<th><?php echo __('Subtype'); ?></th>
 				<th><?php echo __('Version'); ?></th>
@@ -328,6 +327,7 @@
 				<tr>
 					<!--<td><?php //echo $component['id'];?></td>-->
 					<td><?php echo $component['ItemSubtypeVersionsComposition']['position'];?></td>
+					<td><?php echo $component['ItemSubtypeVersionsComposition']['position_name'];?></td>
 					<td><?php echo $this->Html->link($component['ItemSubtype']['ItemType']['name'], array('controller' => 'item_types', 'action' => 'view', $component['ItemSubtype']['ItemType']['id'])); ?>
 					<td><?php echo $this->Html->link($component['ItemSubtype']['name'], array('controller' => 'item_subtypes', 'action' => 'view', $component['ItemSubtype']['id'])); ?></td>
 					<td><?php echo $this->Html->link($version, array('controller' => 'item_subtype_versions', 'action' => 'view', $component['id'])); ?></td>

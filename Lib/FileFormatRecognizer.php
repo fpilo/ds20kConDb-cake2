@@ -3,7 +3,7 @@
 App::uses('fileReader','Lib');
 
 /**
- *	To add a format definition one needs to to (at least) three things:
+ *	To add a format definition one needs to do (at least) three things:
  * 	1. Add a unique description key to the $possibleFormats array with a unique method name as value
  * 	2. Add the checking method functionality, the name should start with: _is, that returns true if the format of the first few rows matches the definition of this file format
  * 	3. Add a conversion method to the $convertFunctions array with the same unique description key and a way for the system to call the conversion method. 
@@ -303,7 +303,6 @@ class FileFormatRecognizer extends fileReader{
 		return true;
 	}
 	
-	
 	private function _isAsciiCiv(){
 		$rows = $this->getRows(0,8);
 		if($rows[0][0] == "*" && $rows[1][0] == "v" && $rows[2][0] == "*" && $rows[3][0] == "*" && $rows[4][0] == "*" && count(explode("\t",$rows[6]))==4 ){
@@ -381,7 +380,6 @@ class FileFormatRecognizer extends fileReader{
 		$this->outData["cvmeas"] = $measurement2->getCols(array_keys($header[0])[0],array_keys($header[1])[0])->getDataAsCSV();
 		return true;
 	}
-	
 	
 	private function storeAsCSV(){
 		if($this->foundMatch){
