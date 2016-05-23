@@ -1,4 +1,6 @@
+<div id="multipleCompAddForm">
 <?php echo $this->Plupload->loadWidget('jqueryui', array('height' => '330px')); ?>
+</div>
 
 <script type="text/javascript">
 
@@ -63,6 +65,8 @@ function addComponents(data,info,num){
 </script>
 
 <div id="prova"><?php //debug($this->request->data); ?></div>
+
+<div id="singleCompAddForm">
 <table class="DefaultSelectors" cellpadding="0" cellspacing="0" id="table_component_subtypes">
     <tr>
 		<td colspan="5">
@@ -96,6 +100,8 @@ function addComponents(data,info,num){
 	}
 ?>
 <?php echo $this->Form->hidden("editWithAttached",array("value"=>$editWithAttached)); ?>
+</div>
+
 <?php require(dirname(__FILE__).'/update_components.ctp'); ?>
 
 <br>

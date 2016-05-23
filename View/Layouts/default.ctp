@@ -71,6 +71,7 @@
 				$("html").removeClass('busy');
 			});
 			$('#main-menu').smartmenus({hideTimeout:1000});
+			$('#action-menu').smartmenus({hideTimeout:1000});
 			$("#verticalmenu > ul").addClass("sm sm-darkblue sm-vertical"); //Add class to previous element to design it correctly
 		});	
 		
