@@ -640,6 +640,7 @@ class ItemSubtypeVersionsController extends AppController {
 	 * @return if delete was a success TRUE else FALSE
 	 */
 	public function delete($id = null) {
+		
 		/*
 		if (!empty($this->request->data)) {
 			$controller = $this->request->data['controller'];
@@ -650,9 +651,9 @@ class ItemSubtypeVersionsController extends AppController {
 		else
 			$redirect = array('action' => 'index');
 		*/
-
+		
 		if (!$this->request->is('post')) {
-			throw new MethodNotAllowedException();
+				throw new MethodNotAllowedException();
 		}
 		$this->ItemSubtypeVersion->id = $id;
 		if (!$this->ItemSubtypeVersion->exists()) {
@@ -978,7 +979,12 @@ class ItemSubtypeVersionsController extends AppController {
 								
 								$itemSubtypeName = $value[4]."_".$value[2]."u";
 								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->recursive = -1;	
-								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->find("first", array("conditions" => array("ItemSubtype.name" => $itemSubtypeName)));
+								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->find("first", array("conditions" => array(
+																																																						"ItemSubtype.name" => $itemSubtypeName,
+																																																						"ItemSubtype.item_type_id" => $itemType['ItemType']['id']
+																																																						)
+																																													)
+																																						);
 								if(empty($itemSubtype)){
 									$this->set("message","wrong ItemSubtype name. ItemSubtype not found in DB.");
 									throw new Exception(__("wrong ItemSubtype name. ItemSubtype not found in DB."));
@@ -986,7 +992,12 @@ class ItemSubtypeVersionsController extends AppController {
 								else $formRow[] = $itemSubtype['ItemSubtype']['id'];
 								
 								$itemSubtypeVersionVersion = $value[5];
-								$itemSubtypeVersion = $this->ItemSubtypeVersion->find("first", array("conditions" => array("ItemSubtypeVersion.version" => $itemSubtypeVersionVersion)));
+								$itemSubtypeVersion = $this->ItemSubtypeVersion->find("first", array("conditions" => array(
+																																																				"ItemSubtypeVersion.version" => $itemSubtypeVersionVersion,
+																																																				"ItemSubtypeVersion.item_subtype_id" => $itemSubtype['ItemSubtype']['id']
+																																																				)
+																																										)
+																																			);
 								if(empty($itemSubtypeVersion)){
 									$this->set("message","wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB.");
 									throw new Exception(__("wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB."));

@@ -1,9 +1,8 @@
 <?php
-	// $this->Html->addCrumb('Item Types', '/item_types/index/');
-	$this->Html->addCrumb($this->data['ItemSubtype']["ItemType"]['name'], '/item_types/view/'.$this->data['ItemSubtype']["ItemType"]['id']);
-	// $this->Html->addCrumb('Item Subtypes', '/item_subtypes/index/');
-	$this->Html->addCrumb($this->data['ItemSubtype']['name'], '/item_subtypes/view/'.$this->data['ItemSubtype']['id']);
+	$itemSubtypeVersionName = ($this->data['ItemSubtypeVersion']['name'] != "")? $this->data['ItemSubtypeVersion']['version']." (".$this->data['ItemSubtypeVersion']['name'].")": "v".$this->data['ItemSubtypeVersion']['version'];
+	$this->Html->addCrumb($itemSubtypeVersionName, '/item_subtype_versions/view/'.$this->data['ItemSubtypeVersion']['id']);
 ?>
+
 <div class="itemSubtypeVersions form">
 <?php echo $this->Form->create('ItemSubtypeVersion');?>
 	<fieldset>

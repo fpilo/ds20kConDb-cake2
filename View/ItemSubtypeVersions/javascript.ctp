@@ -27,7 +27,7 @@ $(document).ready(function(){
       
 	function UpdateComponents(component_table){
 		$('#component_table').remove();
-		$('#table_component_subtypes').after(component_table);
+		$('#component_table_div').after(component_table);
 		$("#accordion").accordion( "refresh" )
 	}
 
@@ -49,7 +49,7 @@ $(document).ready(function(){
    function RemoveComponent(dummy) {
       $.post(
          '<?php echo $this->Html->url(array('controller' => 'itemSubtypeVersions', 'action' => 'removeComponent')); ?>/',
-         {dummy: dummy, session: session_id,editWithAttached: $("#ItemSubtypeVersionEditWithAttached").val() },
+         {dummy: dummy, session: session_id, editWithAttached: $("#ItemSubtypeVersionEditWithAttached").val() },
          UpdateComponents
       );
    }
@@ -64,6 +64,7 @@ $(document).ready(function(){
          {dummy: dummy, field: 'position', value: position, session: session_id }
       );
    }
+	 
    function AttachedChanged(elem) {
       var pos = elem.name.split("][");
       var dummy = pos[1];

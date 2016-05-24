@@ -2,7 +2,6 @@
 	Create a table with all Components
 -->
 
-
 <table id="component_table">
 <tr>
 	<th>Project</th>

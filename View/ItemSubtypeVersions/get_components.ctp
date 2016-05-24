@@ -57,7 +57,7 @@ $(document).ready(function () {
 	}
 
 	function html_show_array($array){
-		echo "<table id=\"compListTable\" cellspacing=\"0\" border=\"2\">\n";
+		echo "<table id=\"comp_list_table\" cellspacing=\"0\" border=\"2\">\n";
 		show_array($array, true, 0); //Set here the column range
 		echo "</table>\n";
 	}

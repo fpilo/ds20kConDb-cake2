@@ -53,14 +53,14 @@
 	//Action buttons in side menu: hide/unhide multiple or single component load form in components tab
 	$( document ).ready(function(){
 		
-		$("#singleCompAddForm").hide();
-		$("#multipleCompAddForm").hide(); 
+		$("#single_comp_add_form").hide();
+		$("#multiple_comp_add_form").hide(); 
 		
 		$("#tabs").tabs({ 
 		  beforeActivate: function (event, ui) {
 				if($.trim(ui.newPanel.attr('id')) == 'common'){
-					$("#singleCompAddForm").hide();
-					$("#multipleCompAddForm").hide();
+					$("#single_comp_add_form").hide();
+					$("#multiple_comp_add_form").hide();
 				}
 			}
 		});
@@ -71,8 +71,8 @@
 			$('#tabs').tabs({
 				active: index
 			});			
-			$("#singleCompAddForm").show();
-			$("#multipleCompAddForm").hide();
+			$("#single_comp_add_form").show();
+			$("#multiple_comp_add_form").hide();
 			
 		});
 
@@ -82,8 +82,9 @@
 			$('#tabs').tabs({
 				active: index
 			});	
-			$("#singleCompAddForm").hide();
-			$("#multipleCompAddForm").show();
+			$("#single_comp_add_form").hide();
+			$("#multiple_comp_add_form").show();
+			
 		});
 
 	});

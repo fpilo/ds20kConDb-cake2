@@ -90,26 +90,28 @@
 					</td>
 					<td><?php echo $itemSubtypeVersion['comment'];?></td>
 					<td>
-						<?php echo $this->Form->postLink(	$this->Html->image(
-																			'delete.png',
-																			array(
-																				'title' => 'Delete',
-																				'alt' => __('Delete file'),
-																				'border' => '0',
-																				'width'=>'24',
-																				'height'=>'24')),
-															array(
-																'controller' => 'itemSubtypeVersions',
-																'action' => 'delete',
-																$itemSubtypeVersion['id']
-															),
-															array(
-																'data' => array(
-																	'controller' => 'itemSubtypes',
-																	'action' => 'view',
-																	'param' => $itemSubtype['ItemSubtype']['id']),
-																'escape' => false),
-															__('Are you sure you want to delete version %s?', $itemSubtypeVersion['version'])); ?>
+						<?php echo $this->Form->postLink($this->Html->image(
+																							'delete.png',
+																							array(
+																								'title' => 'Delete',
+																								'alt' => __('Delete file'),
+																								'border' => '0',
+																								'width'=>'24',
+																								'height'=>'24')),
+																							array(
+																								'controller' => 'itemSubtypeVersions',
+																								'action' => 'delete',
+																								$itemSubtypeVersion['id']
+																							),
+																							array(
+																								'data' => array(
+																									'controller' => 'itemSubtypes',
+																									'action' => 'view',
+																									'param' => $itemSubtype['ItemSubtype']['id']
+																								),
+																								'escape' => false
+																							),
+																							__('Are you sure you want to delete version %s?', $itemSubtypeVersion['version'])); ?>
 					</td>
 				</tr>
 			<?php endforeach; ?>
