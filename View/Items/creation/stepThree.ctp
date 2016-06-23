@@ -8,31 +8,29 @@
 		padding: 5px 0px;
 	}
 </style>
+
 <?php
 
-// debug($data);
-// debug($itemSubtypeVersion);
+	//Echo a text describing what will happen if the submit button is pressed
+	echo $description;
+	if(count($assemble["ItemSubtypeVersion"]["Components"])>0)
+		require("components.ctp");
 
-//Echo a text describing what will happen if the submit button is pressed
-echo $description;
-if(count($assemble["ItemSubtypeVersion"]["Component"])>0)
-	require("components.ctp");
-
-//Adapt the button text according to the selections
-if ($submit){
-	echo $this->Form->create('Item',array("class"=>"stepThree", "default"=>false));
-	if(count($assemble["ItemSubtypeVersion"]["Component"])==0){
-		if(!isset($itemCodes)){
-			$itemCodes = array($itemCode);
+	//Adapt the button text according to the selections
+	if ($submit){
+		echo $this->Form->create('Item',array("class"=>"stepThree", "default"=>false));
+		if(count($assemble["ItemSubtypeVersion"]["Components"])==0){
+			if(!isset($itemCodes)){
+				$itemCodes = array($itemCode);
+			}
+			foreach($itemCodes as $itemCode){
+				echo "<input type='hidden' value='$itemCode' name='data[Item][code][]'/>";
+			}
 		}
-		foreach($itemCodes as $itemCode){
-			echo "<input type='hidden' value='$itemCode' name='data[Item][code][]'/>";
-		}
+		echo $this->Form->end(__('Create Item'));
 	}
-	echo $this->Form->end(__('Create Item'));
-}
 
-echo $this->element("step_three_javascript");
+	echo $this->element("step_three_javascript");
 
 ?>
 

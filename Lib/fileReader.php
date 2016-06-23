@@ -43,7 +43,7 @@ class fileReader extends error{
 	}
 	
 	function __destruct(){
-		if(!empty($this->filePath) && file_exists($this->filePath)) fclose($this->fp);
+		if($this->fp!=false) fclose($this->fp); //CAPIRE PERCHE' NECESSARIO L'IF!!!
 		if($this->compressedFilePath != null){ 
 			//compressed file path is already set, unlink the copy created on demand
 			unlink($this->filePath);

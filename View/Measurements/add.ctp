@@ -6,28 +6,24 @@
 
 
 <div class="measurements form">
-	<h1>Save a Measurement in the Database. </h1>
-	<?php if ($itemId != null): echo "<h3>Measurements will be added to item: ";
-	echo $this->Html->link($itemCode,array('controller'=>"items",'action'=>"view",$itemId,"#"=>"information"));
-	echo "</h3>";
-	endif;
-	?>
-	<h3>The system can currently handle:
-		<ul>
-			<li>CVI and STR files created by LabView at HEPHY</li>
-			<li>CSV files created by APVDAQ Version V0.93 7 July 2014 and later</li>
-			<li>It and IV files of measurements in the climate chamber at HEPHY</li>
-		</ul>
-		<br />
-	To add new file layouts to the system a file sample is required. <br />
-	Multiple Files can be selected and uploaded at once. <br />
-	It is also possible to upload multiple Files in a .zip Archive at once (Useful for slow connections). <br />
-	<br />
-	Each file generates a preview that then needs to be confirmed. <br />
-	Measurements are automatically attached to Items if the item code can be recognized and found in the database<br />
-	If an item Code is passed the code is compared to the one in the File and the result is displayed. 
-	</h3>
-	<?php echo $this->Plupload->loadWidget('jqueryui', array('height' => '330px')); ?>
+	<?php echo $this->Form->create('Measurement');?>
+	<fieldset>
+		<legend><?php echo __('Save Measurements in the Database'); ?></legend>
+		<?php 
+			if ($itemId != null): echo "<h3>Measurements will be added to item: ";
+			echo $this->Html->link($itemCode,array('controller'=>"items",'action'=>"view",$itemId,"#"=>"information"));
+			echo "</h3>";
+			endif;
+		?>
+		<?php echo $this->Plupload->loadWidget('jqueryui', array('height' => '330px')); ?>
+		<div class="measurements form" id="preview"></div>
+		<div class="measurements" id="debug_output"></div>
+
+		<div id="component_table_div">
+			<?php require(dirname(__FILE__).'/preview_table.ctp'); ?>
+		</div>
+	</fieldset>
+	<?php echo $this->Form->end(__('Submit'));?>
 </div>
 
 <div id='verticalmenu'>
@@ -41,9 +37,8 @@
 	<?php require(dirname(__FILE__).'/../Layouts/menu.ctp'); ?>
 </div>
 
-<div class="measurements form" id="preview"></div>
-<div class="measurements" id="debug_output"></div>
 <script type="text/javascript">
+
 var num = 1;
 function preview(info){
 
@@ -68,13 +63,51 @@ function preview(info){
 
 }
 
+function UpdatePreviewTable(preview_table){
+
+	$('#preview_table').remove();
+	$('#component_table_div').after(preview_table);
+	$("#accordion").accordion( "refresh" )
+	
+}
+
 function previewDiv(data,info,num){
 
+	var tableArray = [];
+	
 	$("#preview").append("<div class='preview' id='preview_area_"+num+"'></div>");
 	var preview_area = $('#preview_area_'+num);
-	preview_area.hide()
+	preview_area.hide();
 	preview_area.html(data);
-	preview_area.fadeIn(500);
+	//preview_area.fadeIn(500);
+	
+	preview_area.find('#meas_list_table tr').each(function() {
+
+		var arrayOfThisRow = [];
+		var tableData = $(this).find('td');
+		if (tableData.length > 0) {
+			tableData.each(function() { arrayOfThisRow.push($(this).text()); });
+			tableArray.push(arrayOfThisRow);
+		}
+	
+		for(var index = 0; index < tableArray.length; index++){
+
+			$.post('<?php echo $this->Html->url(array('controller' => 'measurements', 'action' => 'addTmpMeasurement')); ?>/',
+				{
+					itemCode: tableArray[index][0],
+					itemId: tableArray[index][2],
+					status: tableArray[index][3],
+					measurementSetupId: tableArray[index][4],
+					measurementSetupName: tableArray[index][5],
+					fileName: info.local,
+					session: "tmpMeasurements"
+				},
+				UpdatePreviewTable
+			);
+
+		}
+
+	});
 
 	preview_area.find(".delete_measurement").each(function(){
 		$(this).click(function(){
@@ -92,7 +125,9 @@ function previewDiv(data,info,num){
 		})
 	});
 
+	//FP This function is the one used to save measurement
 	preview_area.find(".confirm_measurement").each(function(){
+	
 		$(this).click(function(){
 			data = new Array();
 			preview_area.find("th.emptyCol").each(function(){
@@ -113,23 +148,26 @@ function previewDiv(data,info,num){
 			});
 			preview_area.html('<?php echo $this->Html->image("loading.gif",array("width"=>100)); ?>');
 //				console.log(info.local);
+
 			//Save the measurement with the parameters set
 			$.post("<?php echo Router::url(array('controller' => 'measurements', 'action' => 'saveData')); ?>",
-			{"emptyCols":data,
-			"measurementTags":measurementTags,
-			"measurementSetup":measurementDevice,
-			 "fileName":info.local,
-			 "itemId":info.itemId},
-			function(result){
-				preview_area.html(result);
-				preview_area.find(".delete_measurement").each(function(){
-					$(this).click(function(){
+			{
+				"emptyCols":data,
+				"measurementTags":measurementTags,
+				"measurementSetup":measurementDevice,
+				"fileName":info.local,
+				"itemId":info.itemId},
+				function(result){
+					preview_area.html(result);
+					preview_area.find(".delete_measurement").each(function(){
+						$(this).click(function(){
 						$(this).parent().parent().remove();
 					});
 				});
 
 			});
-		});
+
+		});		
 	});
 
 	var allCells = $(this).find("td, th");

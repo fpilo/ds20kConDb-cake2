@@ -10,7 +10,6 @@ class MeasurementData extends error{
 	protected $rows = array();
 	protected $dataCache = array();
 	
-
 	function __construct($cols = array(),$rows = array()){
 		if(count($cols) != 0 and empty($rows)){
 			//Only one argument passed, first element is header and rest is data
@@ -21,6 +20,7 @@ class MeasurementData extends error{
 			$this->addRows($rows);
 		}
 	}
+	
 	/**
 	*	Needs to be an array of PositionId=>array("parameterId"=>"parameterName") pairs
 	*/

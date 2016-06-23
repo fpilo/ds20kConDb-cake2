@@ -15,19 +15,20 @@ App::uses('Sanitize', 'Utility');
 class ItemSubtypeVersion extends AppModel {
 
 	public $actsAs = array('Containable');
-/**
- * Display field
- *
- * @var string
- */
+
+	/**
+	 * Display field
+	 *
+	 * @var string
+	 */
 	public $displayField = 'version';
 	public $order = 'ItemSubtypeVersion.version ASC';
 
-/**
- * Validation rules
- *
- * @var array
- */
+	/**
+	 * Validation rules
+	 *
+	 * @var array
+	 */
 	public $validate = array(
 		'version' => array(
 			'notempty' => array(
@@ -89,11 +90,11 @@ class ItemSubtypeVersion extends AppModel {
 
 	//The Associations below have been created with all possible keys, those that are not needed can be removed
 
-/**
- * belongsTo associations
- *
- * @var array
- */
+	/**
+	 * belongsTo associations
+	 *
+	 * @var array
+	 */
 	public $belongsTo = array(
 		'Manufacturer' => array(
 			'className' => 'Manufacturer',
@@ -111,11 +112,11 @@ class ItemSubtypeVersion extends AppModel {
 		)
 	);
 
-/**
- * hasMany associations
- *
- * @var array
- */
+	/**
+	 * hasMany associations
+	 *
+	 * @var array
+	 */
 	public $hasMany = array(
 		'Item' => array(
 			'className' => 'Item',
@@ -133,11 +134,11 @@ class ItemSubtypeVersion extends AppModel {
 	);
 
 
-/**
- * hasAndBelongsToMany associations
- *
- * @var array
- */
+	/**
+	 * hasAndBelongsToMany associations
+	 *
+	 * @var array
+	 */
 	public $hasAndBelongsToMany = array(
 		'DbFile' => array(
 			'className' => 'DbFile',
@@ -155,7 +156,7 @@ class ItemSubtypeVersion extends AppModel {
 			'insertQuery' => ''
 		),
 		'Component' => array(
-			'className' => 'ItemSubtypeVersion',
+			'className' => 'ItemSubtypeVersionComponent',
 			'joinTable' => 'item_subtype_versions_compositions',
 			'foreignKey' => 'item_subtype_version_id',
 			'associationForeignKey' => 'component_id',
@@ -217,23 +218,34 @@ class ItemSubtypeVersion extends AppModel {
 	 *
 	 * returns all $components
 	 */
-	public function getComponentsRecursive($ids, $properties) {
+	public function getComponentsRecursive($id = null, $properties = null) {
 
-		$components = $this->find('first', array(
-						'conditions' => array('ItemSubtypeVersion.id' => $ids),
-						'contain' => array('Component.ItemSubtype.ItemType')
-					));
+		$components = $this->Item->ItemSubtypeVersion->Component->find('all', array(
+			'order' => array('Component.position_numeric' => 'asc'),
+			'conditions' => array('item_subtype_version_id' => $id),
+			'contain' => array(
+				'ItemSubtypeVersion' => array(
+					'fields' => array('id','version','has_components'),
+					'ItemSubtype' => array(
+						'fields' => array('name','shortname'),
+						'ItemType' => array('fields' => array('name'))
+						)
+				)
+			)
+		));
 
-		foreach($components['Component'] as $key => $component) {
+		foreach($components as $key => $component) {
 			foreach($properties as $name => $value) {
-				$components['Component'][$key][$name] = $value;
+				$components[$key][$name] = $value;
 			}
 
-			if($component['has_components'] > 0) {
-				$components['Component'][$key]['Component'] = $this->getComponentsRecursive($component['id'], $properties);
+			if($component['ItemSubtypeVersion']['has_components'] > 0) {
+				$components[$key]['Components'] = $this->getComponentsRecursive($component['Component']['id'], $properties);
 			}
 		}
-		return $components['Component'];
+		
+		return $components;
+		
 	}
 
 

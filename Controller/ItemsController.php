@@ -63,37 +63,40 @@ class ItemsController extends AppController {
 	 * Also performs checks if the item_code is unique (if applicable), and which method to use depending on the item type and the user input
 	 *
 	 */
-
 	public function create() {
 		
 		if($this->request->isAjax()){
+			
 			//AJAX Request, therefore at least stage two, check request data to determin what is required.
 			$this->autoRender = false;
 			
 			if(isset($this->request->data["Item"]) && !isset($this->request->data["Item"]["item_quality_id"])){ //Step Two
+				
 				//Request contains Item array but not yet the quality, step two requested
 
 				//Required for selectFromInventory method
 				$this->Session->write("ItemData",$this->request->data);
-
 				return $this->_step_two_view();
 
-			}elseif(isset($this->request->data["step"])){ // SAVE (Step Four)	
+			}
+			elseif(isset($this->request->data["step"])){ // SAVE (Step Four)	
+			
 				//Is step four, store values
 				//First check if the "code" or the "amount" field are set.
 				if(isset($this->request->data["Item"]["amount"])){
-					debug("ciao2");
 					$this->_register_stock_item();
 				}elseif(isset($this->request->data["Item"]["code"]) && isset($this->request->data["Item"]["create_components"])){
 					$this->_register_item(); //required for single item creation
 				}elseif(isset($this->request->data["Item"]["code"])){
 					$this->_assemble_item($this->request->data);
 				}
-				die;
 				$this->set("description",$this->description);
-				return $this->render("creation/progressbar");
-			}elseif(isset($this->request->data["Item"]) && isset($this->request->data["Item"]["item_quality_id"])){ //Step Three
-				//Request contains Item array and quality, step check which registration to execute and continue with that
+				return $this->render("creation/progressbar");  //FP 2016-05-25 Questa progressbar prob. non esiste +!!!! 
+			
+			}
+			elseif(isset($this->request->data["Item"]) && isset($this->request->data["Item"]["item_quality_id"])){ //Step Three
+			
+			//Request contains Item array and quality, step check which registration to execute and continue with that
 				//First check if the "code" or the "amount" field are set.
 				if(isset($this->request->data["Item"]["code"])){
 					$faulty = array();
@@ -123,16 +126,21 @@ class ItemsController extends AppController {
 							$this->_warning("The code ".$faulty[0]." exists already",true);
 						return;
 					}
-				}elseif(isset($this->request->data["Item"]["amount"])){
+				}
+				elseif(isset($this->request->data["Item"]["amount"])){
+					
  					// TODO: check and error messages if non stock items can be attached to this item subtype version
  					// echo "Amount set, showing message what will happen, or error message if the selected item has components";
 					// echo "Amount set, showing component if only stock items are components, otherwise error message that a stock cannot be created of this itemsubtypeversion and what the requirements are<br />";
 					$this->set("itemCodes",array(""));
 					return $this->_view_component_selector(true,true);
+				
 				}else{
+					
 					//Somehow the javascript check failed, throw error and exit
 					echo "You tricked the javascript check, well played... This is still as far as you'll get on this";
 					return;
+					
 				}
 
 			}
@@ -158,42 +166,58 @@ class ItemsController extends AppController {
 	 * It also calls the method that sets the descriptor string to be displayed before submitting the whole chain of actions
 	 */
 	private function _view_component_selector($onlyAllowStock=false,$isStock=false){
+		
 		$this->Item->ItemSubtypeVersion->unbindModel(array("hasMany"=>array("Item")));
 		$assemble['ItemSubtypeVersion'] = $this->Item->ItemSubtypeVersion->find('first', array(
-																'conditions' => array('ItemSubtypeVersion.id' => $this->request->data['Item']['item_subtype_version_id']),
-																'contain' => array('Component.ItemSubtype.ItemType', 'ItemSubtype')));
+			'conditions' => array('ItemSubtypeVersion.id' => $this->request->data['Item']['item_subtype_version_id']),
+			'contain' => array('ItemSubtype')
+		));
+		$assemble['ItemSubtypeVersion']['Components'] = $this->Item->ItemSubtypeVersion->Component->find('all', array(
+			'order' => array('Component.position_numeric' => 'asc'),
+			'conditions' => array('item_subtype_version_id' => $this->request->data['Item']['item_subtype_version_id']),
+			'contain' => array(
+				'ItemSubtypeVersion' => array(
+					'fields' => array('version'),
+					'ItemSubtype' => array(
+						'fields' => array('name'),
+						'ItemType' => array('fields' => array('name'))
+						)
+				)
+			)
+		));
+
 		/*
 		 * Initialize $assemble['Selection']
 		 * Write data for Selection table for positions without an item.
 		 */
-		foreach($assemble['ItemSubtypeVersion']['Component'] as $component) {
-			$position = $component['ItemSubtypeVersionsComposition']['position'];
+		foreach($assemble['ItemSubtypeVersion']['Components'] as $component) {
+			$position = $component['Component']['position'];
 			if(empty($assemble['Selection'][$position])) {
-				if($component['ItemSubtypeVersionsComposition']['is_stock'] == false && !$onlyAllowStock) {
-					$actions = array(__('Equip'), array('controller' => 'items', 'action' => 'selectFromInventory', $position,$this->request->data['Item']['item_subtype_version_id'],$component['ItemSubtypeVersionsComposition']['is_stock']));
-				}elseif($component['ItemSubtypeVersionsComposition']['is_stock'] == false && $onlyAllowStock){
+				if($component['Component']['is_stock'] == false && !$onlyAllowStock) {
+					$actions = array(__('Equip'), array('controller' => 'items', 'action' => 'selectFromInventory', $position, $this->request->data['Item']['item_subtype_version_id'], $component['Component']['is_stock']));
+				}elseif($component['Component']['is_stock'] == false && $onlyAllowStock){
 					$actions = "";
 				} else {
-					$actions = array(__('Equip Stock'), array('controller' => 'items', 'action' => 'selectFromInventory', $position,$this->request->data['Item']['item_subtype_version_id'],$component['ItemSubtypeVersionsComposition']['is_stock']));
+					$actions = array(__('Equip Stock'), array('controller' => 'items', 'action' => 'selectFromInventory', $position, $this->request->data['Item']['item_subtype_version_id'], $component['ItemSubtypeVersionsComposition']['is_stock']));
 				}
-				//debug($component);
-            $assemble['Selection'][$position] = array(
-               'position' => $position,
-               'type_name' => $component['ItemSubtype']['ItemType']['name'],
-               'subtype_name' => $component['ItemSubtype']['name'],
-               'subtype_version' => $component['version'],
-               'code' => array('No item selected.', array('class' => 'highlight')),
-               'tags' => "-",
-               'state_name' => "-",
-               'quality' => "-",
-               'manufacturer_name' => "-",
-               'project_name' => "-",
-               'actions' => $actions
-            );
-         } else {
-            $assemble['Selection'][$position]['subtype_version'].=', '.$component['version'];
-         }
+				$assemble['Selection'][$position] = array(
+					 'position' => $position,
+					 'type_name' => $component['ItemSubtypeVersion']['ItemSubtype']['ItemType']['name'],
+					 'subtype_name' => $component['ItemSubtypeVersion']['ItemSubtype']['name'],
+					 'subtype_version' => $component['ItemSubtypeVersion']['version'],
+					 'code' => array('No item selected.', array('class' => 'highlight')),
+					 'tags' => "-",
+					 'state_name' => "-",
+					 'quality' => "-",
+					 'manufacturer_name' => "-",
+					 'project_name' => "-",
+					 'actions' => $actions
+				);
+			} else {
+				$assemble['Selection'][$position]['subtype_version'].=', '.$component['ItemSubtypeVersion']['version'];
+			}
 		}
+		
 		$description = "";
 		$submit = true;
 		//Sort array by key (key = position). (low to high) if the item has components
@@ -202,7 +226,7 @@ class ItemsController extends AppController {
 			ksort($assemble['Selection']);
 			if($isStock){
 				$description = $this->_warning("This Subtype Version has components, Stock Items can only be created of items without components.",false);
-				$assemble["ItemSubtypeVersion"]["Component"] = array(); //Set the components to an empty array to signal this
+				$assemble["ItemSubtypeVersion"]["Components"] = array(); //Set the components to an empty array to signal this
 				$submit = false;
 			}else{
 				$description = "If so desired you can now attach components. ";
@@ -219,6 +243,7 @@ class ItemsController extends AppController {
 		$this->set(compact('assemble','description','submit'));
 		$this->set("itemSubtypeVersion",$this->itemSubtypeVersion);
 		return $this->render("creation/stepThree");
+		
 	}
 
 
@@ -229,23 +254,26 @@ class ItemsController extends AppController {
 
 
 	private function _view_component_register(){
+		
 		$properties['location_id'] 	= $this->request->data['Item']['location_id'];
 		$properties['state_id'] 	= 8;
 
 		$components = $this->Item->ItemSubtypeVersion->getComponentsRecursive($this->request->data['Item']['item_subtype_version_id'], $properties);
 		foreach($components as $component){
-			if($component["ItemSubtypeVersionsComposition"]["is_stock"]==1){
+			if($component["Component"]["is_stock"]==1){
 				$this->_warning("This Subtype Version has stock components, creating with new components not possible. Maybe you wanted to assemble?",true);
 				return;
 			}
 		}
-		$componentProjects = $this->Item->Project->find('list');
-		$itemTags = $this->Item->ItemTag->find("list");
-		$this->set("showShortName",$this->request->data["Item"]["show_shortName"]);
-		$this->set('itemTags', $itemTags);
-		$this->set('componentProjects', $componentProjects);
+		
 		$this->set("components",$components);
+		$this->set("showShortName",$this->request->data["Item"]["show_shortName"]);
+		$itemTags = $this->Item->ItemTag->find("list");
+		$this->set('itemTags', $itemTags);
+		$componentProjects = $this->Item->Project->find('list');
+		$this->set('componentProjects', $componentProjects);
 		$this->render("creation/register");
+		
 	}
 
 
@@ -257,9 +285,8 @@ class ItemsController extends AppController {
 	{
 		if($data == null)
 			$data = $this->request->data;
-
+		
 		$eventIds = $this->Item->History->Event->getEventIds(array('Item created', 'Item attached', 'Item detached'));
-
 
 		$newItemInsert = $data;
 		$newItemInsert["ItemTag"] = $newItemInsert["Item"]["item_tags_id"];
@@ -360,8 +387,7 @@ class ItemsController extends AppController {
 	 * 		match the criteria, are still available and are on the same location
 	 * It then writes the new configuration for the composite item into the database and reduces stock item amounts (if applicable)
 	 */
-	private function _assemble_item($data = null)
-	{
+	private function _assemble_item($data = null){
 		if($data == null)
 			$data = $this->request->data;
 		if(!isset($data["Component"]))
@@ -424,26 +450,31 @@ class ItemsController extends AppController {
 		return $this->render("creation/progressbar");
 
 	}
+	
 	/**
 	 * The internal function that returns the view for item registration --> Items without components
 	 */
-	 private function _step_two_view(){
+	private function _step_two_view(){
+		
 		$this->Item->ItemSubtypeVersion->unbindModel(array("hasMany"=>array("Item")));
 		$itemSubtypeVersion = $this->Item->ItemSubtypeVersion->find('first', array(
 																'conditions' => array('ItemSubtypeVersion.id' => $this->request->data['Item']['item_subtype_version_id']),
-																'contain' => array('Component.ItemSubtype.ItemType', 'ItemSubtype')));
+																'contain' => array('Component', 'ItemSubtype')));
+		$this->set("itemSubtypeVersion",$itemSubtypeVersion);
+																
 		$itemQualities = $this->Item->ItemQuality->find('list');
 		//Only get the tags applicable for this item type project combination
 		$itemTags = $this->Item->ItemTag->getTagsForItemTypeAndProject($this->request->data["Item"]["item_type_id"],$this->request->data["Item"]["project_id"]);
 		$this->set(compact('itemQualities','itemTags','assemble'));
-		$this->set("itemSubtypeVersion",$itemSubtypeVersion);
+
 		$itemTypesCreate = array("Wafer","Panel"); //Array containing the names of the item types where components should be created and not assembled
 		$itemTypes = $this->Item->ItemType->find("list");
 		$create = in_array($itemTypes[$this->request->data["Item"]["item_type_id"]],$itemTypesCreate)?TRUE:FALSE; //Check if selected item_type is in the array and if yes create even if not admin
 		$this->set("create",$create);
+	
 		return $this->render("creation/stepTwo");
-	 }
-
+	
+	}
 
 	public function statistic() {
 		if(!empty($this->request->data)) {
@@ -847,6 +878,7 @@ class ItemsController extends AppController {
  * @return void
  */
 	public function view($id = null) {
+		
 		$this->loadModel('MeasurementTagsMeasurement');
 
 		// check if item exists
@@ -860,7 +892,7 @@ class ItemsController extends AppController {
 
 		$this->Item->contain(array(
 				"History",
-				"ItemSubtypeVersion.Component.ItemSubtype.ItemType",
+				//"ItemSubtypeVersion.Component.ItemSubtype.ItemType", //FP Removed on 2016-06-23 because of changes
 				"ItemSubtypeVersion",
 				"Manufacturer",
 				"ItemType",
@@ -878,6 +910,7 @@ class ItemsController extends AppController {
 				"Component.ItemSubtypeVersion",
 				"Component.ItemSubtype",
 				"Component.ItemType",
+				"Component.Manufacturer",
 				"Component.State",
 				"Component.Project",
 				"Component.DbFile",
@@ -887,54 +920,41 @@ class ItemsController extends AppController {
 				"ItemQuality",
 				"DbFile.User"));
 
-		$this->Item->Component->unbindModel(
-	        array(	'hasOne' => array('Checklist'),
-					'hasMany' => array('History','Measurement'),
-	        		'hasAndBelongsToMany' => array('DbFile', 'CompositeItem', 'Component', 'Transfer')
-	    ));
+		$this->Item->Component->unbindModel(array(	
+			'hasOne' => array('Checklist'),
+			'hasMany' => array('History','Measurement'),
+	    'hasAndBelongsToMany' => array('DbFile', 'CompositeItem', 'Component', 'Transfer')
+	  ));
 
 		$item = $this->Item->find('first', array(
 			'conditions' 	=>	array('Item.id' => $id)
 		));
-      $item['CompositeItemChain']= array_reverse($this->Item->getIsPartOfRecursive($id));
+		$item['CompositeItemChain']= array_reverse($this->Item->getIsPartOfRecursive($id));
+		
+		$components = $this->Item->ItemSubtypeVersion->Component->find('all', array(
+			'order' => array('Component.position_numeric' => 'asc'),
+			'conditions' => array('item_subtype_version_id' => $item['ItemSubtypeVersion']['id']),
+			'contain' => array(
+				'ItemSubtypeVersion' => array(
+					'fields' => array('id','version','name','has_components'),
+					'ItemSubtype' => array(
+						'fields' => array('name','shortname'),
+						'ItemType' => array('fields' => array('name'))
+						)
+				)
+			)
+		));
+		$item['ItemSubtypeVersion']['Components'] = $components;
+		
 		//Return Item Data as json object if request is ajax
 		if($this->request->isAjax()){
 			$this->autoRender = false;
 			echo json_encode($item);
 			return;
 		}
+		
 		$itemData["Item"] = $item["Item"];
 		$this->Session->write("ItemData",$itemData);
-
-		// Find and add components which are not unique but from stock
-		// $components = $this->Item->ItemComposition->find('all', array(
-			// 'conditions' 	=>	array(
-						// 'AND' => array(
-							// 'ItemComposition.item_id' => $id,
-							// array ('ItemComposition.component_id' => null),
-							// 'ItemComposition.valid' => 1,
-						// )
-					// )
-		// ));
-		// Find the stock which belongs to the composition
-		// foreach($components as $key => $component) {
-			// if(!empty($component['ItemComposition']['stock_id'])) {
-				// $this->loadModel('Stock');
-				// $stock = $this->Stock->find('first', array(
-						// 'contain' => array(
-							// 'ItemSubtypeVersion.Manufacturer',
-							// 'State',
-							// 'Location',
-							// 'Project',
-							// 'StockQuality',
-							// 'StockTag'
-						// ),
-						// 'conditions' 	=>	array('Stock.id' => $component['ItemComposition']['stock_id'])
-				// ));
-				// $components[$key]['Stock'] = $stock;
-			// }
-		// }
-		// $item['Component'] = array_merge($item['Component'], $components);
 
 		// Unbind relationship with Item for the next find('all') to save time by not joining tables
 		$this->Item->Checklist->updateStatus($id);

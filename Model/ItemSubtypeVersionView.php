@@ -23,4 +23,5 @@ class ItemSubtypeVersionView extends AppModel {
  * @var string
  */
 	public $displayField = 'item_subtype_name';
+	
 }

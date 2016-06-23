@@ -1,73 +1,70 @@
-<?php
-
-// debug($data);
-// debug($itemSubtypeVersion);
-echo $this->Form->create('Item',array("class"=>"stepTwo", "default"=>false)); ?>
-<fieldset>
-	<legend><?php  echo __('Create new '.$itemSubtypeVersion['ItemSubtype']['name'].' v'.$itemSubtypeVersion['ItemSubtypeVersion']['version'] .': '); ?></legend>
-	<table>
-	<?php
-		if($this->Session->check('Auth.User.Permissions.controllers/AclManager/Acl/index')){
-			//Is admin, show checkbox
-			$checkbox = "Don't attach existing components but create them as new (previously known as 'register')".$this->Form->checkbox("create_components",array('hiddenField' => false))."<br />";
-			$checkbox .= "Add shortname in the middle of the generated name (only applicable if registering)".$this->Form->checkbox("show_shortName",array());
-		}else{
-			//is not admin, hidden input depending on itemType
-			if($create){
-				$checkbox = $this->Form->hidden("create_components",array('value' => "1"));
-				$checkbox .= "Add shortname in the middle of the generated name ".$this->Form->checkbox("show_shortName",array());
+<?php echo $this->Form->create('Item',array("class"=>"stepTwo", "default"=>false)); ?>
+	<fieldset>
+		<legend><?php  echo __('Create new '.$itemSubtypeVersion['ItemSubtype']['name'].' v'.$itemSubtypeVersion['ItemSubtypeVersion']['version'] .': '); ?></legend>
+		<table>
+		<?php
+			if($this->Session->check('Auth.User.Permissions.controllers/AclManager/Acl/index')){
+				//Is admin, show checkbox
+				$checkbox = "Don't attach existing components but create them as new (previously known as 'register')".$this->Form->checkbox("create_components",array('hiddenField' => false))."<br />";
+				$checkbox .= "Add shortname in the middle of the generated name (only applicable if registering)".$this->Form->checkbox("show_shortName",array());
 			}else{
-				//isn't wafer, don't set
-				$checkbox = "";
+				//is not admin, hidden input depending on itemType //FP Can be removed??
+				if($create){
+					$checkbox = $this->Form->hidden("create_components",array('value' => "1"));
+					$checkbox .= "Add shortname in the middle of the generated name ".$this->Form->checkbox("show_shortName",array());
+				}else{
+					//isn't wafer, don't set
+					$checkbox = "";
+				}
 			}
-		}
-		echo $this->Html->tableCells(
-			array(
-				//Row1
+			echo $this->Html->tableCells(
 				array(
-					// Cell1 of Row1
+					//Row1
 					array(
-						$this->Form->input('code',array('type'=>'textarea','class'=>'codeOrAmount','placeholder'=>'Enter either one or multiple item codes'))."Separate multiple item codes with space or semikolon",
-						array("style"=>"border-bottom:0px;")
+						// Cell1 of Row1
+						array(
+							$this->Form->input('code',array('type'=>'textarea','class'=>'codeOrAmount','placeholder'=>'Enter either one or multiple item codes'))."Separate multiple item codes with space or semicolon",
+							array("style"=>"border-bottom:0px;")
+						),
+						// Cell2 of Row1
+						array(
+							$this->Form->input('comment', array('label' => 'Comment', 'type' => 'textarea')),
+							array('rowspan' => '2', "colspan"=>"3", "style"=>"width:75%")
+						)
 					),
-					// Cell2 of Row1
+					//Row2
 					array(
-						$this->Form->input('comment', array('label' => 'Comment', 'type' => 'textarea')),
-						array('rowspan' => '2', "colspan"=>"3", "style"=>"width:75%")
+						// Cell1 of Row2
+						array(
+							$this->Form->input('amount',array('type'=>"number","min"=>"1",'class'=>'codeOrAmount','placeholder'=>'or enter an amount to create a stock of items'))."This will create an indistinguishable stock of items",
+							array("style"=>"background-color:white;")
+						)
+					),
+					//Row3
+					array(
+						array(
+							$this->Form->input('item_quality_id', array('size' => 1, 'style' => 'width: 250px','default' => '6')), //Set default to "not classified"
+							array( "style"=>"width:50%")
+						),
+						array(
+							$this->Form->input('item_tags_id', array('size' => 4, 'style' => 'width: 250px','multiple'=>true)),
+							array("colspan"=>"1", "style"=>"width:20%")
+						),
+						array(
+							$checkbox,
+							array("style"=>"width: 250px;","colspan"=>"1")
+						),
 					)
-				),
-				//Row2
-				array(
-					// Cell1 of Row2
-					array(
-						$this->Form->input('amount',array('type'=>"number","min"=>"1",'class'=>'codeOrAmount','placeholder'=>'or enter an amount to create a stock of items'))."This will create an indistinguishable stock of items",
-						array("style"=>"background-color:white;")
-					)
-				),
-				//Row3
-				array(
-					array(
-						$this->Form->input('item_quality_id', array('size' => 1, 'style' => 'width: 250px','default' => '6')), //Set default to "not classified"
-						array( "style"=>"width:50%")
-					),
-					array(
-						$this->Form->input('item_tags_id', array('size' => 4, 'style' => 'width: 250px','multiple'=>true)),
-						array("colspan"=>"1", "style"=>"width:20%")
-					),
-					array(
-						$checkbox,
-						array("style"=>"width: 250px;","colspan"=>"1")
-					),
 				)
-			)
-		);
-	?>
-	</table>
-</fieldset>
-
+			);
+		?>
+		</table>
+	</fieldset>
 <?php echo $this->Form->end(__('Continue'));?>
+
 <script type='text/javascript'>
 	$(function(){
+		
 		$(".codeOrAmount").change(function(){ //if in either of these fields a value is changed deactivate all the remaining fields.
 			var trigger = $(this);
 			if(trigger.val() != ""){
@@ -84,10 +81,13 @@ echo $this->Form->create('Item',array("class"=>"stepTwo", "default"=>false)); ?>
 			}
 
 		});
+		
 		//Bind the action for the step two form
 		$("form.stepTwo").bind("submit", function (event) {
+		
 			$("#ItemCreateStepThree").html("");
 			$("#ItemCreateStepFour").animate({height:"0px"},100,function(){$(this).html("");$(this).height("auto");});
+		
 			//Check if all mandatory fields have values before submitting
 			var allRequiredSelected = true;
 
@@ -108,7 +108,7 @@ echo $this->Form->create('Item',array("class"=>"stepTwo", "default"=>false)); ?>
 
 			}
  			dataFromStepTwo = $("form.stepTwo").serialize();
-
+			
 			if(allRequiredSelected){
 				$.ajax(
 					{

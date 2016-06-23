@@ -1,7 +1,3 @@
-<script type="text/javascript">
-$(document).ready(function () {
-});
-</script>
 <style type="text/css">
 	div.error{
 		color:red;
@@ -20,10 +16,70 @@ $(document).ready(function () {
 		background: #5BA150;
 	}
 </style>
+
 <?php if (isset($message)): ?>
-	<p class="error-message error"><?php echo $message ?></p>
-<?php endif;//debug($filedata->getPreviewColnames($previewId)); ?>
-<?php $submitAllowed = false; ?>
+	<p class="error-message error"><?php echo $message; ?></p>
+<?php endif; ?>
+
+<div>
+<?php if (isset($previewData)): ?>
+	<?php
+
+		/*
+		* Read columns specified in the specified columns interval (lastCol is an optional parameter)
+		* TODO METTERE QUESTA FUNZIONE IN UNA LIBRERIA SEPARATA
+		*/
+		function show_array($array, $hasHeaders = false, $firstCol, $lastCol = -1){
+				
+			if(is_array($array) == 1){          // check if input is an array
+				foreach($array as $key_val => $value) {
+					if (is_array($value) == 1){   // array is multidimensional
+						if($hasHeaders){
+							echo "<thead>\n<tr>";
+							show_array($value, $hasHeaders, $firstCol);
+							echo "</tr>\n</thead>\n<tbody>\n";
+							$hasHeaders = false;
+						} else{
+							echo "<tr>";
+							show_array($value, $hasHeaders, $firstCol);
+							echo "</tr>\n";
+						}
+					}
+					else{                        // (sub)array is not multidim
+						if($key_val>=$firstCol && ($lastCol<0 || $key_val<$lastCol)){
+							if($hasHeaders){
+								echo "<th main width=\"120\">".$value."</th>"; 
+							} else{ 
+								echo "<td main width=\"120\">".$value."</td>"; 
+							}
+						}
+					}
+				} //foreach $array
+				echo "</tbody>";
+			}  
+			else{ // argument $array is not an array
+				return;
+			}
+		}
+
+		function html_show_array($array){
+			echo "<table id=\"meas_list_table\" cellspacing=\"0\" border=\"2\">\n";
+			show_array($array, false, 0); //Set here the column range
+			echo "</table>\n";
+		}
+		
+		if(isset($devices))
+			if(count($devices)==1){
+				$previewData['measurementSetupId'] = 1;
+				$previewData['measurementSetupName'] = reset($devices)['name'];
+			}
+		html_show_array($previewData);
+		
+	?>
+<?php endif; ?>
+</div>
+
+<?php $submitAllowed = false; unset($previewData); ?>
 <div class="items view">
 	<?php if (isset($previewData)): ?>
 		<?php if (is_array($previewData)): ?>
@@ -50,7 +106,10 @@ $(document).ready(function () {
 						<?php $submitAllowed = true; ?>
 					<?php	endif; ?>
 				<?php 	else: ?>
-					<?php if($previewData["item_id"] !== false): ?>
+					<?php if($previewData["item_id"] !== false && $previewData["itemCode"] == "MultiDev"): ?>
+						Set of measurements referring to many items
+						<?php $submitAllowed = true; ?>
+					<?php elseif($previewData["item_id"] !== false): ?>
 						Item code: <?php echo $previewData["itemCode"]; ?>
 						with item ID:
 						<?php echo $this->Html->link($previewData["item_id"],array('controller'=>"items",'action'=>"view",$previewData["item_id"],"#"=>"information")); ?>
@@ -61,16 +120,14 @@ $(document).ready(function () {
 						before adding a measurement to it. If the measurement file doesn't contain an item code start the measurement from the item to attach it.
 					<?php endif; ?>
 				<?php	endif;?>
-
-
-
 			</h3>
+			
 			<dl>
 				<dt>Recognized start time</dt><dd><?php echo date("d.m.Y H:i:s",$mFile->measurementParameters->startTime); ?></dd>
 				<dt>Recognized stop time</dt><dd><?php echo date("d.m.Y H:i:s", $mFile->measurementParameters->stopTime); ?></dd>
 			<?php
 			foreach($mFile->measurementParameters->getParameters() as $parameter){
-					echo "<dt>".$parameter["parameter_name"]."</dt><dd> ".$parameter["parameter_value"]."</dd>";
+				echo "<dt>".$parameter["parameter_name"]."</dt><dd> ".$parameter["parameter_value"]."</dd>";
 			}
 			echo "</dl>";
 			if($mFile->measurementParameters->error){
@@ -87,6 +144,7 @@ $(document).ready(function () {
 				echo "<b>".implode(", ",$tmp)."</b>";
 			}
 			?>
+			
 			<h3>Possible Tags:</h3>
 			<div class="measurementTags">
 			<?php
@@ -110,18 +168,19 @@ $(document).ready(function () {
 			//Transfer these tags on submit
 			?>
 			</div>
+
+			<!-- Here a User should be presented with a list of measurement devices that can create this measurement type.-->			
 			<h3>Measurement Setup used:</h3>
-<!--			Here a User should be presented with a list of measurement devices that can create this measurement type.-->
 			<div class="measurementDevices">
 				<div class="measurementDeviceError error"></div>
-			<?php
-				$selected = (count($devices)==1)?" selected":"";
-				foreach($devices as $deviceId=>$device){
-					echo "<div class='measurementDevice".$selected."' value='".$deviceId."'>".$device["name"]." @ ".$device["Location"]["name"]."</div>";
-				}
-			
-			?>
+				<?php
+					$selected = (count($devices)==1)?" selected":"";
+					foreach($devices as $deviceId=>$device){
+						echo "<div class='measurementDevice".$selected."' value='".$deviceId."'>".$device["name"]." @ ".$device["Location"]["name"]."</div>";
+					}		
+				?>
 			</div>
+			
 			<?php
 			if($mFile->itemParameters !== null){
 				echo "<h3>Item Parameters:</h3>
@@ -178,7 +237,7 @@ $(document).ready(function () {
 			<?php endif; ?>
 		<?php endif; ?>
 	<?php endif; ?>
-	<?php
-	?>
-<input type='button' value='Discard Preview' class='delete_measurement'/>
+
+	<!--<input type='button' value='Discard Preview' class='delete_measurement'/>-->
+
 </div>

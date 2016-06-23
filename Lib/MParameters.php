@@ -34,6 +34,10 @@ class MParameters extends error{
 		return $return;
 	}
 	
+	function getItemCode(){
+		return (isset($this->itemCode))? $this->itemCode : null;
+	}
+	
 	function setItemCode($newItemCode){
 		$this->itemCode = $newItemCode;
 	}

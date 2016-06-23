@@ -13,11 +13,12 @@ App::uses('MTags','Lib');
  *	
  */
 class MFile extends fileReader{
+	
 	//Properties
 	private $measurementDevice;
 	private $measurements = array(); //Associative Array of measurement Objects
 	private $measurementFileId = null;
-	private $infoSections = array("info","tags","parameters","apv25"); //Added apv25 since it is the FIR filter section in the most common apvdaq csv files and should not be imported per default but only displayed in case the viewed measurement is an apvdaq measurement. 
+	private $infoSections = array("info","tags","parameters");
 	
 	protected $sections = array();
 	protected $markers = array();
@@ -27,8 +28,7 @@ class MFile extends fileReader{
 	protected $measurementTags;
 	protected $itemParameters;
 	protected $originalFileName;
-	
-	
+	protected $originalDirName;
 	
 	function __construct($param = null,$originalFileName=null){
 		if(is_numeric($param)){
@@ -44,6 +44,7 @@ class MFile extends fileReader{
 		}
 		if($originalFileName != null){
 			$this->originalFileName = basename($originalFileName);
+			$this->originalDirName = dirname($originalFileName);
 		}
 		$this->findSections();
 		if($this->error){
@@ -176,7 +177,11 @@ class MFile extends fileReader{
 				break;
 			}
 		}
-		$mm = $this->getSectionAsMeasurement($sectionName,false);
+		
+		if($this->measurementParameters->getItemCode() == "MultiDev"){
+			$mm = array(); //Fi
+		}
+		else $mm = $this->getSectionAsMeasurement($sectionName,false);
 		//Restore the original lastline value from the backup value
 		$this->sections[$id]["lastline"] = $backup;
 		return $mm;
@@ -191,7 +196,6 @@ class MFile extends fileReader{
 			}
 		}
 		return $this->measurements[$sectionName];
-
 	}
 	
 	public function getSectionCols($section,$col1,$col2=null,$col3=null){
@@ -215,6 +219,7 @@ class MFile extends fileReader{
 	}	
 	
 	public function save(){
+		
 		if(!$this->fromDB){ //Only allow save if not from database import (if it is then it has already been saved)
 			$Session = new SessionComponent(new ComponentCollection());
 			$userId = $Session->read('User.User.id');
@@ -245,7 +250,7 @@ class MFile extends fileReader{
 				mkdir(dirname(MEAS_CONV.DS.$this->fileFolderFromId($measurementFileId)),0777,true);
 			}
 			//Move original File to original File Folder (with renaming according to measurement File ID)
-			copy(MEAS_TMP.DS.$this->originalFileName,MEAS_ORIG.DS.$this->fileFolderFromId($measurementFileId));
+			copy(MEAS_TMP.DS.$this->originalDirName.DS.$this->originalFileName,MEAS_ORIG.DS.$this->fileFolderFromId($measurementFileId));
 			//Gzip original File to save space
 			$this->_gZipFile(MEAS_ORIG.DS.$this->fileFolderFromId($measurementFileId));
 			//Move converted CSV File to converted File Folder(with renaming according to measurement File ID)

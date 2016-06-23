@@ -21,6 +21,7 @@ class FileFormatRecognizer extends fileReader{
 	
 	private $possibleFormats = array(
 		"csv"=>"_isCSV",
+		"csv-md"=>"_isCSVMD", //CSV Multi Devices
 		"ascii-it" =>"_isAsciiIt",  //ASCII Long term It measurements (Current over Time)
 		"ascii-iv" =>"_isAsciiIv",  //ASCII IV curves
 		"ascii-iv2" =>"_isAsciiIv2",  //ASCII IV curves 2nd format
@@ -31,6 +32,7 @@ class FileFormatRecognizer extends fileReader{
 	
 	private $conversionFunctions = array(
 		"csv"	=>"_convertCSV",
+		"csv-md"	=>"_convertCSV",
 		"ascii-it" =>"_convertAsciiIt",
 		"ascii-iv" =>"_convertAsciiIv",
 		"ascii-iv2" =>"_convertAsciiIv2",
@@ -55,7 +57,7 @@ class FileFormatRecognizer extends fileReader{
 				break;
 			}
 		}
-		if($this->match != "csv"){ //Only save converted csv if the input wasn't a CSV.
+		if($this->match != "csv" && $this->match != "csv-md"){ //Only save converted csv if the input wasn't a CSV.
 			$this->storeAsCSV();
 		}
 	}
@@ -63,7 +65,17 @@ class FileFormatRecognizer extends fileReader{
 	private function _isCSV(){
 		$firstRow = $this->getRows(0,1);
 		if(substr($firstRow[0],0,6) == "[info]"){
-			return true;
+			$thirdRow = $this->getRows(3,4);
+			if(substr($thirdRow[0],-10,8) != "MultiDev") return true;
+		}
+		return false;
+	}
+	
+	private function _isCSVMD(){
+		$firstRow = $this->getRows(0,1);
+		if(substr($firstRow[0],0,6) == "[info]"){
+			$thirdRow = $this->getRows(3,4);
+			if(substr($thirdRow[0],-10,8) == "MultiDev") return true;
 		}
 		return false;
 	}
@@ -71,7 +83,7 @@ class FileFormatRecognizer extends fileReader{
 	private function _convertCSV(){
 		$this->convertedFilePath = $this->originalFilePath;
 	}
-	
+		
 	private function _isAsciiStr(){
 		$rows = $this->getRows(0,8);
 		if($rows[0][0] == "*" && $rows[1][0] == "*" && $rows[2][0] == "*" ){
@@ -400,5 +412,81 @@ class FileFormatRecognizer extends fileReader{
 			$this->convertedFilePath = $newFilePath;
 		}
 	}
+	
+	public function storeMDCSV($folderPath){
+
+		$infoSections = array("tags","parameters");
+		
+		//Put all file rows in memory
+		$rows = $this->getRows(0,-1); 
+
+		$this->outData["info"] = array();
+		$tmp = explode(",",$rows[2]);
+		$this->outData["info"]["StartDateTime"] = $tmp[0];
+		$this->outData["info"]["StopDateTime"] = $tmp[1];
+
+		$match = 0;
+		$matches = array();
+		foreach($rows as $num=>$row){
+			if($num<3) continue;
+			if(strpos($row[0],'[')==0){
+				if(preg_match("/\[([^)]+)\]/",$row,$matches)!= 0){
+					$this->outData[$match] = array("name"=>$matches[1],"firstline"=>$num+1);
+					if($match > 0){
+						$this->outData[$match-1]["lastline"] = $num-1;
+					}
+					$match++;
+				}
+			}
+		}
+		$this->outData[$match-1]["lastline"] = $num-1;
+		
+		//Find the measurementType for each section marker
+		$MeasurementType = ClassRegistry::init('MeasurementType');
+		foreach($this->outData as $id=>$section){
+			if(!is_numeric($id) || in_array($section["name"],$infoSections)) continue;
+			$mmType = $MeasurementType->findByMarker($section["name"]);
+
+			if(isset($mmType["MeasurementType"])){
+			
+				$xData=explode(",",$rows[$this->outData[$id]["firstline"]]);
+				$xData=array_diff( $xData, array( '' ));
+
+				$mdMeas=array_slice($rows,$this->outData[$id]["firstline"]+1,$this->outData[$id]["lastline"]);			
+				$fileCounter=0;
+				foreach($mdMeas as $sdMeas){
+					
+					$yData = explode(",",$sdMeas);
+					$devId = $yData[0];
+					$yData = array_slice($yData,1); 
+					$yData=array_diff( $yData, array( '' ));
+					$xyData = array_combine($xData,$yData);  //Mettere qui un controllo dimensioni prima del combine
+					$xyData=array_diff( $xyData, array( '' ));
+					
+					$text = "";
+					$text .= "[info]\n";
+					$infoRow = $this->outData["info"];
+					$infoRow["ID"] = $devId;
+					$text .= implode(",",array_keys($infoRow))."\n";
+					$text .= implode(",",array_values($infoRow))."\n\n";
+					
+					$text .= "[".$section["name"]."]\n";
+					$text .= "voltage [V],current [A]\n"; //Mettere in automatico (ma serve??)
+					foreach($xyData as $xVal=>$yVal){	
+						$text .= $xVal.",".$yVal."\n";
+					}
+
+					$newFilePath = $folderPath.$fileCounter.".csv";
+					file_put_contents($newFilePath,$text);
+					$fileCounter++;
+
+					if($fileCounter>4) break;
+					
+				}
+			}
+		}
+		
+	}
+	
 }
 ?>

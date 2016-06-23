@@ -40,7 +40,7 @@
 			<li><a href="#information"><?php echo __('Item Information'); ?></a></li>
 			<li><a href="#checklist"><?php echo __('Check list'); ?></a></li>
 			<li><a href="#histories"><?php echo __('History'); ?></a></li>
-			<?php if (!empty($item['ItemSubtypeVersion']['Component'])):?>
+			<?php if (!empty($item['ItemSubtypeVersion']['Components'])):?>
 				<li><a href="#components"><?php echo __('Components');?></a></li>
 			<?php endif; ?>
 			<li><a href="#files"><?php echo __('Files');?></a></li>
@@ -114,16 +114,17 @@
 																				'url' => array('controller' => 'items', 'action' => 'changeTags', $item['Item']['id'])));
 					?>&nbsp;
 				</dd>
-				<?php if (!empty($item['ItemSubtypeVersion']['Component'])): ?>
+				<?php if (!empty($item['ItemSubtypeVersion']['Components'])): ?>
 				<dt><?php echo __('Components Tags'); ?></dt>
 				<?php
 					$tmpTags = array();
 					foreach($item["Component"] as $component){
 						if(($component['ItemComposition']['valid'] == TRUE) && $component['ItemComposition']['component_id'] != null){
-							foreach($component["ItemTag"] as $itemTag){
-								$tmpTags[] = $itemTag["name"];
-								//$tmpTags[] = $this->Html->tableLink($itemTag["name"],array("controller"=>"item_tags","action"=>"view",$itemTag["id"]));
-							}
+							if(isset($component["ItemTag"]))
+								foreach($component["ItemTag"] as $itemTag){
+									$tmpTags[] = $itemTag["name"];
+									//$tmpTags[] = $this->Html->tableLink($itemTag["name"],array("controller"=>"item_tags","action"=>"view",$itemTag["id"]));
+								}
 						}elseif(($component['ItemComposition']['valid'] == TRUE) && $component['ItemComposition']['component_id'] == null) {
 							foreach($component["Stock"]["StockTag"] as $itemTag){
 								$tmpTags[] = $itemTag["name"];
@@ -494,7 +495,7 @@
 	   <?php require(dirname(__FILE__).'/view_history_tab.ctp'); ?>
 
 		<?php $rowBackups = ""; ?>
-		<?php if (!empty($item['ItemSubtypeVersion']['Component'])):?>
+		<?php if (!empty($item['ItemSubtypeVersion']['Components'])):?>
 		<div id="components">
 					<h3 class="actions"><?php  echo __('Currently attached Components: '); ?></h3>
 
@@ -518,11 +519,11 @@
 
 						$cells = array();
 						//Store the components of this subtypeversion in an array ready to be displayed as a table
-						foreach($item['ItemSubtypeVersion']['Component'] as $componentSlot) {
+						foreach($item['ItemSubtypeVersion']['Components'] as $componentSlot) {
                      // do position and version first in case there is multiple options on this slot
-							$position = $componentSlot['ItemSubtypeVersionsComposition']['position'];
+							$position = $componentSlot['Component']['position'];
 							//Display version name if it exists
-							$version = ($componentSlot["name"] != "")?$componentSlot['version']." (".$componentSlot["name"].")":$componentSlot['version'];
+							$version = ($componentSlot['ItemSubtypeVersion']['name'] != "")?$componentSlot['ItemSubtypeVersion']['version']." (".$componentSlot['ItemSubtypeVersion']['name'].")":$componentSlot['ItemSubtypeVersion']['version'];
                      if(!empty($cells[$position])) {
                         $cells[$position][9].='<br>'.$version;
                         continue;
@@ -535,8 +536,8 @@
 										//'url' => array('controller' => 'items', 'action' => 'changeItemSubtypeVersion', $item['Item']['id'])
 										));
 
-							$type = $componentSlot['ItemSubtype']['ItemType']['name'];
-							$subtype = $componentSlot['ItemSubtype']['name'];
+							$type = $componentSlot['ItemSubtypeVersion']['ItemSubtype']['ItemType']['name'];
+							$subtype = $componentSlot['ItemSubtypeVersion']['ItemSubtype']['name'];
 							$code = '<b>No item attached</b>';
 							$state = '<b>-</b>';
 							$location = '<b>-</b>';
@@ -545,10 +546,10 @@
 							$tags = '<b>-</b>';
 							$quality = '<b>-</b>';
 
-							if($componentSlot['ItemSubtypeVersionsComposition']['is_stock'] == 0) {
-								$actions = $this->Html->link(__('Attach'), array('action' => 'selectFromInventory', $componentSlot['ItemSubtypeVersionsComposition']['position'], $item['Item']['item_subtype_version_id'],0),array("class"=>"equipButtons"));
+							if($componentSlot['Component']['is_stock'] == 0) {
+								$actions = $this->Html->link(__('Attach'), array('action' => 'selectFromInventory', $componentSlot['Component']['position'], $item['Item']['item_subtype_version_id'],0),array("class"=>"equipButtons"));
 							} else {
-								$actions = $this->Html->link(__('Attach Stock'), array('action' => 'selectFromInventory', $componentSlot['ItemSubtypeVersionsComposition']['position'], $item['Item']['item_subtype_version_id'],1),array("class"=>"equipButtons"));
+								$actions = $this->Html->link(__('Attach Stock'), array('action' => 'selectFromInventory', $componentSlot['Component']['position'], $item['Item']['item_subtype_version_id'],1),array("class"=>"equipButtons"));
 							}
 							$cells[$position] = array($position, $status, $code, $tags, $state, $quality, $location, $type, $subtype, $version, $manufacturer, $project, array($actions, array('class'=> 'actions')));
 
@@ -566,7 +567,7 @@
 
 								$status = $this->Html->image('Tick.png', array('border' => '0','width'=>'16','height'=>'16')); //Status icon
 								$position = $component['ItemComposition']['position'];
-								$quality = $this->Html->tableLink($component['ItemQuality']['name'], array("controller"=>"item_qualities","action"=>"view",$component['ItemQuality']['id']));
+								if(!empty($component['ItemQuality'])) $quality = $this->Html->tableLink($component['ItemQuality']['name'], array("controller"=>"item_qualities","action"=>"view",$component['ItemQuality']['id']));
 								$type = $this->Html->tableLink($component['ItemType']['name'], array('controller' => 'item_types', 'action' => 'view', $component['ItemType']['id']));
 								$subtype = $this->Html->tableLink($component['ItemSubtype']['name'], array('controller' => 'item_subtypes', 'action' => 'view', $component['ItemSubtype']['id']));
 								$version = $this->Html->tableLink($version, array('controller' => 'item_subtype_versions', 'action' => 'view', $component['ItemSubtypeVersion']['id']));
@@ -577,7 +578,7 @@
 
 
 								//Section for special treatment if stock item. Only applicable fields are assigned here the rest ist handled for all at once above
-								if(count($component["ItemStocks"])>0){
+								if(isset($component["ItemStocks"]) && count($component["ItemStocks"])>0){
 									//There is a stock item attached at this position, replace applicable fields
 									//Find the stock item configuration for this location
 									foreach($component["ItemStocks"] as $stockNum=>$stockitem)
@@ -592,10 +593,11 @@
 									//No stock item at this position, set standard values from the Item
 									$location = $this->Html->tableLink($component['Location']['name'], array('controller' => 'locations', 'action' => 'view', $component['Location']['id']));
 									$code = $this->Html->tableLink($component['code'], array('controller' => 'items', 'action' => 'view', $component['id']));
-									foreach($component["ItemTag"] as $itemTag){
-										$tmpTags[] = $itemTag["name"];
-										//$tmpTags[] = $this->Html->tableLink($itemTag["name"],array("controller"=>"item_tags","action"=>"view",$itemTag["id"]));
-									}
+									if(isset($component["ItemTag"]))
+										foreach($component["ItemTag"] as $itemTag){
+											$tmpTags[] = $itemTag["name"];
+											//$tmpTags[] = $this->Html->tableLink($itemTag["name"],array("controller"=>"item_tags","action"=>"view",$itemTag["id"]));
+										}
 								}
 
 								$tags = implode(", ", $tmpTags);

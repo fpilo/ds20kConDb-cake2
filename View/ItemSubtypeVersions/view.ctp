@@ -303,12 +303,11 @@
 		</div>
 
 		<div id="components">
-			<?php if (!empty($itemSubtypeVersion['Component'])):?>
 			<table cellpadding = "0" cellspacing = "0">
 			<tr>
 				<!--<th><?php //echo __('Id'); ?></th>-->
-				<th><?php echo __('Position'); ?></th>
-				<th><?php echo __('PosName'); ?></th>
+				<th><?php echo $this->Paginator->sort('Component.position_numeric','Position');?></th>
+				<th><?php echo $this->Paginator->sort('Component.position_name','PosName');?></th>
 				<th><?php echo __('Type'); ?></th>
 				<th><?php echo __('Subtype'); ?></th>
 				<th><?php echo __('Version'); ?></th>
@@ -320,29 +319,52 @@
 				<th><?php echo __('Is a stock item'); ?></th>
 				<th><?php echo __('Allow other versions'); ?></th>
 			</tr>
-			<?php
-				$i = 0;
-				foreach ($itemSubtypeVersion['Component'] as $component): ?>
-				<?php $version = ($component['name']!= "")?$component['version']." (".$component['name'].")":$component['version']; ?>
+
+			<?php if (!empty($components)):?>
+			<?php foreach ($components as $component): ?>
+				<?php //debug($component); ?>
+				<?php //$version = ($component['name']!= "")?$component['version']." (".$component['name'].")":$component['version']; ?>
 				<tr>
 					<!--<td><?php //echo $component['id'];?></td>-->
-					<td><?php echo $component['ItemSubtypeVersionsComposition']['position'];?></td>
-					<td><?php echo $component['ItemSubtypeVersionsComposition']['position_name'];?></td>
-					<td><?php echo $this->Html->link($component['ItemSubtype']['ItemType']['name'], array('controller' => 'item_types', 'action' => 'view', $component['ItemSubtype']['ItemType']['id'])); ?>
-					<td><?php echo $this->Html->link($component['ItemSubtype']['name'], array('controller' => 'item_subtypes', 'action' => 'view', $component['ItemSubtype']['id'])); ?></td>
-					<td><?php echo $this->Html->link($version, array('controller' => 'item_subtype_versions', 'action' => 'view', $component['id'])); ?></td>
-					<td><?php echo $this->Html->link($component['ItemSubtypeVersionsComposition']['project_name'], array('controller' => 'projects', 'action' => 'view', $component['ItemSubtypeVersionsComposition']['project_id'])); ?></td>
-					<td><?php echo $this->Html->link($component['Manufacturer']['name'], array('controller' => 'manufacturers', 'action' => 'view', $component['Manufacturer']['id'])); ?></td>
-					<td><?php echo $component['comment'];?></td>
-					<td><?php echo $this->Form->input('has_components', array('type' => 'checkbox', 'checked' => $component['has_components'], 'label' => false, 'disabled' => true)) ;?></td>
-					<td><?php echo $this->Form->input('attached', array('type' => 'checkbox', 'checked' => $component['ItemSubtypeVersionsComposition']['attached'], 'label' => false, 'disabled' => true)) ;?></td>
-					<td><?php echo $this->Form->input('is_stock', array('type' => 'checkbox', 'checked' => $component['ItemSubtypeVersionsComposition']['is_stock'], 'label' => false, 'disabled' => true)) ;?></td>
-					<td><?php echo $this->Form->input('all_versions', array('type' => 'checkbox', 'checked' => $component['ItemSubtypeVersionsComposition']['all_versions'], 'label' => false, 'disabled' => true)) ;?></td>
+					<td><?php echo $component['Component']['position_numeric'];?></td>
+					<td><?php echo $component['Component']['position_name'];?></td>
+					<td><?php echo $this->Html->link($component['ItemSubtypeVersion']['ItemSubtype']['ItemType']['name'], array('controller' => 'item_types', 'action' => 'view', $component['ItemSubtypeVersion']['ItemSubtype']['ItemType']['id'])); ?>
+					<td><?php echo $this->Html->link($component['ItemSubtypeVersion']['ItemSubtype']['name'], array('controller' => 'item_subtypes', 'action' => 'view', $component['ItemSubtypeVersion']['ItemSubtype']['id'])); ?></td>
+					<td><?php echo $this->Html->link($component['ItemSubtypeVersion']['name'], array('controller' => 'item_subtype_versions', 'action' => 'view', $component['ItemSubtypeVersion']['id'])); ?></td>
+					<td><?php echo $this->Html->link($component['Project']['name'], array('controller' => 'projects', 'action' => 'view', $component['Project']['id'])); ?></td>
+					<td><?php echo $this->Html->link($component['ItemSubtypeVersion']['Manufacturer']['name'], array('controller' => 'manufacturers', 'action' => 'view', $component['ItemSubtypeVersion']['Manufacturer']['id'])); ?></td>
+					<td><?php echo $component['ItemSubtypeVersion']['comment'];?></td>
+					<td>
+						<?php 
+							if(isset($component['Component']['has_components'])) echo $this->Form->input('has_components', array('type' => 'checkbox', 'checked' => $component['Component']['has_components'], 'label' => false, 'disabled' => true));
+							else echo $this->Form->input('has_components', array('type' => 'checkbox', 'checked' => false, 'label' => false, 'disabled' => true));								
+						?>
+					</td>
+					<td><?php echo $this->Form->input('attached', array('type' => 'checkbox', 'checked' => $component['Component']['attached'], 'label' => false, 'disabled' => true)) ;?></td>
+					<td><?php echo $this->Form->input('is_stock', array('type' => 'checkbox', 'checked' => $component['Component']['is_stock'], 'label' => false, 'disabled' => true)) ;?></td>
+					<td><?php echo $this->Form->input('all_versions', array('type' => 'checkbox', 'checked' => $component['Component']['all_versions'], 'label' => false, 'disabled' => true)) ;?></td>
 				</tr>
 			<?php endforeach; ?>
 			</table>
+			<p>
+				<?php
+					echo $this->Paginator->counter(array(
+					'format' => __('Page {:page} of {:pages}, showing {:current} records out of {:count} total, starting on record {:start}, ending on {:end}')
+					));
+				?>	
+			</p>
+			<div class="paging">
+				<?php
+					echo $this->Paginator->prev('< ' . __('previous'), array(), null, array('class' => 'prev disabled'));
+					echo $this->Paginator->numbers(array('separator' => ''));
+					echo $this->Paginator->next(__('next') . ' >', array(), null, array('class' => 'next disabled'));
+				?>
+			</div>
 			<?php else: ?>
-				No components found.
+				<tr>
+					<td colspan="7">No Components found.</td>
+				</tr>
+			</table>
 			<?php endif; ?>
 		</div>
 		<?php if($measurements !== null && $this->Session->check('Auth.User.Permissions.controllers/Measurements/gradeSubtypeVersion')): ?>

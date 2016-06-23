@@ -6,7 +6,8 @@
 	<table cellpadding="0" cellspacing="0">
 	<tr>
 			<th>&nbsp;</th>
-			<th><?php echo $this->Paginator->sort('item_id');?></th>
+			<th><?php echo $this->Paginator->sort('id');?></th>
+			<th><?php echo $this->Paginator->sort('item_id',"Associated Item");?></th>
 			<th>Tags</th>
 			<th><?php echo $this->Paginator->sort('device_id',"Measurement Setup");?></th>
 			<th><?php echo $this->Paginator->sort('user_id');?></th>
@@ -18,6 +19,9 @@
 	foreach ($measurements as $measurement): ?>
 	<tr>
 		<td><?php echo $this->Form->checkbox('measurement',array("value"=>$measurement['Measurement']['id'],'hiddenField'=>false)); ?></td>
+		<td>
+			<?php echo $this->Html->link($measurement['Measurement']['id'], array('controller' => 'measurements', 'action' => 'view', $measurement['Measurement']['id'])); ?>
+		</td>
 		<td>
 			<?php echo $this->Html->link($measurement['Item']['code'], array('controller' => 'items', 'action' => 'view', $measurement['Item']['id'])); ?>
 		</td>
@@ -41,7 +45,6 @@
 			<?php echo ($measurement["Measurement"]["measurement_file_id"]==null)? "":"Converted"; ?>
 		</td>
 		<td class="actions">
-			<?php echo $this->Html->link(__('View'), array('action' => 'view', $measurement['Measurement']['id'])); ?>
 			<?php echo $this->Html->link(__('Edit'), array('action' => 'edit', $measurement['Measurement']['id'])); ?>
 			<?php echo $this->Form->postLink(__('Delete'), array('action' => 'delete', $measurement['Measurement']['id']), null, __('Are you sure you want to delete # %s?', $measurement['Measurement']['id'])); ?>
 		</td>

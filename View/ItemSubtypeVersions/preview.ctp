@@ -20,6 +20,7 @@
 <?php if (isset($message)): ?>
 	<p class="error-message error"><?php echo $message ?></p>
 <?php endif;//debug($filedata->getPreviewColnames($previewId)); ?>
+
 <?php $submitAllowed = false; ?>
 <div class="items view">
 	<?php if (isset($previewData)): ?>

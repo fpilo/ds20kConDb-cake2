@@ -13,12 +13,12 @@ ini_set("memory_limit", "2048M");
  */
 class ItemSubtypeVersionsController extends AppController {
 
-	public $components = array('Session','Parser','RequestHandler','Plupload.Plupload');
+	public $components = array('Session','Parser','RequestHandler','Plupload.Plupload','Paginator');
 	public $helpers = array('Session','Plupload.Plupload','Html');
 
 	private $fileType = "";
 	private $fileInfo = array();
-
+	
 	/**
 	 * index method
 	 *
@@ -38,11 +38,10 @@ class ItemSubtypeVersionsController extends AppController {
 	public function view($id = null) {
 		
 		$this->ItemSubtypeVersion->id = $id;
-		$measurements = array();
-		
 		if (!$this->ItemSubtypeVersion->exists()) {
 			throw new NotFoundException(__('Invalid item subtype version'));
-		}
+		}		
+		
 		$itemSubtypeVersion = $this->ItemSubtypeVersion->find('first', array(
 																			'conditions' => array('ItemSubtypeVersion.id' => $id),
 																			'contain' => array(
@@ -51,14 +50,7 @@ class ItemSubtypeVersionsController extends AppController {
 																						'ItemSubtype.ItemType',
 																						'ItemSubtype.DbFile.User',
 																						'DbFile.User',
-																						'Item',
-																						'Component.ItemSubtype.ItemType',
-																						'Component.Manufacturer')));
-
-		$componentProjects = $this->ItemSubtypeVersion->Project->find('list');
-		foreach($itemSubtypeVersion['Component'] as $key => $myComponent) {
-			$itemSubtypeVersion['Component'][$key]['ItemSubtypeVersionsComposition']['project_name'] = $componentProjects[$myComponent['ItemSubtypeVersionsComposition']['project_id']];
-		}
+																						'Item')));
 
 		/*
 		$bla = $this->ItemSubtypeVersion->Item->Measurement->MeasurementType->findByName("Strip Measurement","MeasurementType.id");
@@ -148,11 +140,28 @@ class ItemSubtypeVersionsController extends AppController {
             }
 			}
 		}*/
+		
+		$paginate = array(
+			'contain' => array(
+				'ItemSubtypeVersion.ItemSubtype',
+				'ItemSubtypeVersion.ItemSubtype.ItemType',
+				'ItemSubtypeVersion.Manufacturer',
+				'Project'
+			),
+			'conditions' => array('item_subtype_version_id' => $id)
+    );
+		$this->Paginator->settings = $paginate;
+		$itemComponents = $this->paginate('Component');
+		
 		$measurements = array(); $previousBatch = array();
-		$this->set(compact("measurements","previousBatch"));
+		
 		$this->set('itemSubtypeVersion', $itemSubtypeVersion);
+		$this->set('components', $itemComponents);
+		$this->set(compact("measurements","previousBatch"));
+		
 	}
 
+	//FP Why this check???
 	protected function _checkPosition($myComponents) {
 		if(!empty($myComponents)) {
 			foreach($myComponents as $key => $myComponent) {
@@ -302,14 +311,40 @@ class ItemSubtypeVersionsController extends AppController {
 		return $this->redirect(array('controller' => 'ItemSubtypeVersions', 'action' => 'add', $item_subtype_id));
 	}
 
-	public function removeAllComponents($item_subtype_id) {
+	//FP TO be changed ... old way
+	/*public function removeAllComponents($item_subtype_id) {
 		$this->Session->write('addItemSubtypeVersion.'.$item_subtype_id, array());
 		return $this->redirect(array('controller' => 'ItemSubtypeVersions', 'action' => 'add', $item_subtype_id));
-	}
+	}*/
 
-	public function resetEdit($item_subtype_version_id) {
-		$this->Session->delete('editItemSubtypeVersion.'.$item_subtype_version_id);
-		return $this->redirect(array('controller' => 'ItemSubtypeVersions', 'action' => 'edit', $item_subtype_version_id));
+	public function resetEdit($id = null) {
+						
+		//Delete tmp entries (status_code - bit0 = 1)
+		$this->ItemSubtypeVersion->Component->deleteAll(
+			array(
+				'item_subtype_version_id' => $id,
+				'status_code' => array(0x1,0x3)
+			),
+			false
+		);
+		
+		//Reset the status_code to 0
+		$itemSubtypeVersionComponents = $this->ItemSubtypeVersion->Component->find('all',array(
+			'recursive' => -1,
+			'fields' => array('id','status_code'),
+			'conditions' => array ('item_subtype_version_id' => $id)
+		));
+
+		if(!empty($itemSubtypeVersionComponents)){
+			foreach($itemSubtypeVersionComponents as $key => $component){
+				$this->ItemSubtypeVersion->Component->id = $component['Component']['id'];
+				$this->ItemSubtypeVersion->Component->saveField('status_code',0);
+			}
+		}			
+
+		$this->Session->delete('editItemSubtypeVersion.'.$id);
+		return $this->redirect(array('controller' => 'ItemSubtypeVersions', 'action' => 'edit', $id));
+
 	}
 
 	/**
@@ -402,10 +437,14 @@ class ItemSubtypeVersionsController extends AppController {
 	 */
 	public function edit($id = null) {
 
+		$this->ItemSubtypeVersion->id = $id;
+		if (!$this->ItemSubtypeVersion->exists()) {
+			throw new NotFoundException(__('Invalid item subtype version'));
+		}		
+
 		$User = ClassRegistry::init('User');
-		
-		$url = Router::url(array('plugin'=>'plupload','controller' => 'plupload', 'action' => 'upload'));
-		$this->ItemSubtypeVersion->id = $id;		
+
+		$url = Router::url(array('plugin'=>'plupload','controller' => 'plupload', 'action' => 'upload'));		
 		$this->Plupload->setUploaderOptions(array(
 			'runtimes' => 'html5',
 			'url' => $url,
@@ -430,19 +469,14 @@ class ItemSubtypeVersionsController extends AppController {
 		$additionalCallbacks = $callbackBase.$callbackFunction.$callbackTail;
 		$this->Session->write('additionalCallbacks', $additionalCallbacks);
 		  
-
-      // see if there exist any items of this subtypeVersion, if yes need to disallow removal of components
+    // see if there exist any items of this subtypeVersion, if yes need to disallow removal of components
 		$count_items = $this->ItemSubtypeVersion->Item->find('count', array(
 								'conditions' => array('Item.item_subtype_version_id' => $id)));
 		$editWithAttached = ($count_items>0);
 
-		$this->ItemSubtypeVersion->id = $id;
-		if (!$this->ItemSubtypeVersion->exists()) {
-			throw new NotFoundException(__('Invalid item subtype version'));
-		}
-
+		//Beg POST
 		if ($this->request->is('post') || $this->request->is('put')) {
-			
+					
 			unset($this->ItemSubtypeVersion->validate['version']);
 			unset($this->ItemSubtypeVersion->validate['has_components']);
 			unset($this->ItemSubtypeVersion->validate['item_subtype_id']);
@@ -453,13 +487,34 @@ class ItemSubtypeVersionsController extends AppController {
 			// $this->request->data["Project"] = array("Project"=>array(1));
 
 			if(!empty($this->request->data['SubtypeComponent'])) {
-				$this->request->data['Component'] = $this->request->data['SubtypeComponent'];
-				unset($this->request->data['SubtypeComponent']);
-			}
 
+				unset($this->request->data['SubtypeComponent']);
+				$itemSubtypeVersionComponents = $this->ItemSubtypeVersion->Component->find('all',array(
+					'recursive' => -1,
+					'conditions' => array (
+						'item_subtype_version_id' => $id,
+						'status_code' => array(0x0, 0x1),
+					)
+				));
+				foreach($itemSubtypeVersionComponents as $key => $component){
+						$this->ItemSubtypeVersion->id = $component['Component']['item_subtype_version_id'];
+						$component['Component']['item_subtype_id'] = $this->ItemSubtypeVersion->ItemSubtype->field('id');
+						unset($component['Component']['id']);
+						unset($component['Component']['item_subtype_version_id']);
+						$this->request->data['Component'][] = $component['Component'];
+				}
+				
+			}
+			
 			if(!empty($this->request->data['Component'])) {
+				
 				$this->request->data['ItemSubtypeVersion']['has_components'] = '1';
 				$position_check = $this->_checkPosition($this->request->data['Component']);
+				
+				foreach($this->request->data['Component'] as $key => $itemComponent){
+					$this->request->data['Component'][$key]['status_code'] = 0x0;
+				}
+				
 			} else {
 				$this->request->data['ItemSubtypeVersion']['has_components'] = '0';
 				$this->request->data['Component'] = array(0=>array());
@@ -475,8 +530,7 @@ class ItemSubtypeVersionsController extends AppController {
 			}
 			unset($this->request->data["Item"]);
 
-			if($position_check) {
-				
+			if($position_check) {				
 				if ($this->ItemSubtypeVersion->save($this->request->data)) {
 					$this->Session->delete('editItemSubtypeVersion.'.$id);
 					
@@ -489,73 +543,75 @@ class ItemSubtypeVersionsController extends AppController {
 				} else {
 					debug($this->ItemSubtypeVersion->validationErrors);
 					$this->Session->setFlash(__('The item subtype version could not be saved. Please, try again.'));
-				}//*/
+				}
 			}
 			else {
 				$this->Session->setFlash(__('Please specify for every component a unique position.'));
 			}
 		}
+		//End POST
 
 		$itemSubtypeVersion = $this->ItemSubtypeVersion->find('first', array(
 																		'conditions' => array('ItemSubtypeVersion.id' => $id),
 																		'contain' => array(
 																		'Manufacturer',
 																		'ItemSubtype.ItemType',
-																		'Component.ItemSubtype.ItemType',
-																		'Component.Manufacturer',
-																		'CompositeItemSubtypeVersion',
 																		'Project')));
 
+//																		'Component.ItemSubtypeVersion.ItemSubtype.ItemType',
+//																		'Component.ItemSubtypeVersion.Manufacturer',
+//																		'CompositeItemSubtypeVersion',
 
 		$this->request->data = $itemSubtypeVersion;
-		
-		$itemSubtype = $itemSubtypeVersion['ItemSubtype'];
+/*		$itemSubtype = $itemSubtypeVersion['ItemSubtype'];
 
 		if(!$this->Session->check('editItemSubtypeVersion.'.$id)) {
 			$myComponents = $itemSubtypeVersion['Component'];
-
+			
 			$componentProjects = $this->ItemSubtypeVersion->Project->find('list');
 
 			foreach($myComponents as $key => $myComponent) {
-				$myComponents[$key]['ItemSubtypeVersion']['id'] 				= $myComponent['id'];
-				$myComponents[$key]['ItemSubtypeVersion']['item_subtype_id'] 	= $myComponent['item_subtype_id'];
-				$myComponents[$key]['ItemSubtypeVersion']['version'] 			= $myComponent['version'];
-				$myComponents[$key]['ItemSubtypeVersion']['manufacturer_id'] 	= $myComponent['manufacturer_id'];
-				$myComponents[$key]['ItemSubtypeVersion']['has_components'] 	= $myComponent['has_components'];
-				$myComponents[$key]['ItemSubtypeVersion']['comment']			= $myComponent['comment'];
 				$myComponents[$key]['ItemSubtypeVersionsComposition']['project_name'] = $componentProjects[$myComponent['ItemSubtypeVersionsComposition']['project_id']];
-
-				unset($myComponents[$key]['id']);
-				unset($myComponents[$key]['item_subtype_id']);
-				unset($myComponents[$key]['version']);
-				unset($myComponents[$key]['manufacturer_id']);
-				unset($myComponents[$key]['has_components']);
-				unset($myComponents[$key]['comment']);
 			}
 			$this->Session->write('editItemSubtypeVersion.'.$id, $myComponents);
 		} else {
 			$myComponents = $this->Session->read('editItemSubtypeVersion.'.$id);
 		}
-
-		$common_projects[] 					= array('name' => 'No projects', 'title' => 'No projects found', 'value' => -1,'disabled' => true);
-		$common_manufacturers[]				= array('name' => 'Select a project', 'title' => 'No project selected', 'value' => -1, 'disabled' => true);
-		$component_projects[]				= array('name' => 'No projects', 'title' => 'No projects found', 'value' => -1, 'disabled' => true);
-		$component_manufacturers[]			= array('name' => 'Select a project', 'title' => 'No project selected', 'value' => -1, 'disabled' => true);
-		$component_item_types[]				= array('name' => 'Select a manufacturer', 'title' => 'No manufacturer selected', 'value' => -1, 'disabled' => true);
-		$component_item_subtypes[]			= array('name' => 'Select a type', 'title' => 'No item type selected', 'value' => -1, 'disabled' => true);
-		$component_item_subtype_versions[]	= array('name' => 'Select a subtype', 'title' => 'No subtype selected', 'value' => -1, 'disabled' => true);
-
+*/
+		$paginate = array(
+			'contain' => array(
+				'ItemSubtypeVersion.ItemSubtype',
+				'ItemSubtypeVersion.ItemSubtype.ItemType.name',
+				'ItemSubtypeVersion.Manufacturer.name',
+				'Project'
+			),
+			'conditions' => array(
+				'item_subtype_version_id' => $id,
+				'status_code' => array(0x0, 0x1)
+			)
+    );
+		$this->Paginator->settings = $paginate;
+		$itemComponents = $this->paginate('Component');
+		
+		$common_projects[] = array('name' => 'No projects', 'title' => 'No projects found', 'value' => -1,'disabled' => true);
+		$common_manufacturers[]	= array('name' => 'Select a project', 'title' => 'No project selected', 'value' => -1, 'disabled' => true);
+		$component_projects[]	= array('name' => 'No projects', 'title' => 'No projects found', 'value' => -1, 'disabled' => true);
+		$component_manufacturers[] = array('name' => 'Select a project', 'title' => 'No project selected', 'value' => -1, 'disabled' => true);
+		$component_item_types[] = array('name' => 'Select a manufacturer', 'title' => 'No manufacturer selected', 'value' => -1, 'disabled' => true);
+		$component_item_subtypes[] = array('name' => 'Select a type', 'title' => 'No item type selected', 'value' => -1, 'disabled' => true);
+		$component_item_subtype_versions[] = array('name' => 'Select a subtype', 'title' => 'No subtype selected', 'value' => -1, 'disabled' => true);
 
 		$this->_restoreFormValues(
-					$this->request->data,
-					$common_projects,
-					$common_manufacturers,
-					$common_comment,
-					$component_projects,
-					$component_manufacturers,
-					$component_item_types,
-					$component_item_subtypes,
-					$component_item_subtype_versions);
+			$this->request->data,
+			$common_projects,
+			$common_manufacturers,
+			$common_comment,
+			$component_projects,
+			$component_manufacturers,
+			$component_item_types,
+			$component_item_subtypes,
+			$component_item_subtype_versions
+		);
 
 		/*
 		// Read & Update Session
@@ -572,22 +628,27 @@ class ItemSubtypeVersionsController extends AppController {
 		debug($options);
 		//*/
       
-      $list_states = $this->ItemSubtypeVersion->Item->State->find('list');
+    $list_states = $this->ItemSubtypeVersion->Item->State->find('list');
 
-		$this->set(compact('editWithAttached',
-			'itemSubtypeVersions',
-            'list_states',
-			'predecessor',
-			'common_projects',
-			'common_manufacturers',
-			'common_comment',
-			'component_projects',
-			'component_manufacturers',
-			'component_item_types',
-			'component_item_subtypes',
-			'component_item_subtype_versions',
-			'myComponents')
+		$this->set(
+			compact(
+				'editWithAttached',
+				'itemSubtypeVersions',
+				'list_states',
+				'predecessor',
+				'common_projects',
+				'common_manufacturers',
+				'common_comment',
+				'component_projects',
+				'component_manufacturers',
+				'component_item_types',
+				'component_item_subtypes',
+				'component_item_subtype_versions',
+				'myComponents'
+			)
 		);
+		$this->set('components',$itemComponents);
+
 	}
 
 	protected function _restoreFormValues( &$data, &$common_projects,	&$common_manufacturers,	&$common_comment, &$component_projects, &$component_manufacturers, &$component_item_types, &$component_item_subtypes, &$component_item_subtype_versions) {
@@ -718,25 +779,30 @@ class ItemSubtypeVersionsController extends AppController {
 
 	public function addComponent() {
 		
-		$myComponents = array();
+		//$myComponents = array();
 
 		if($this->RequestHandler->isAjax()) {
+			
 			if(isset($this->request->data["editWithAttached"]) && $this->request->data["editWithAttached"]==1) {
 				$this->set("editWithAttached",true);
 			} else {
 				$this->set("editWithAttached",false);
 			}
-			$session = $this->request->data['session'];
-			$myComponents = $this->Session->read($session);
-			$next_position = 1;
-			foreach($myComponents as $component) {
-				if($component['ItemSubtypeVersionsComposition']['position']>=$next_position) {
-					$next_position = 1 + $component['ItemSubtypeVersionsComposition']['position'];
-				}
-			}
 			
-			$id = $this->request->data['itemSubtypeVersionId'];
-			if($id=='') {
+			//Parent Item Subtype Version Id and NextPosition
+			$session = $this->request->data['session'];
+			$parentItemSubtypeVersionId = substr(strrchr($session, "."), 1);
+			
+			$next_position = $this->ItemSubtypeVersion->Component->Find("first", array(
+				'fields' => array('Component.position_numeric'),
+				'order' => array('Component.position_numeric' => 'desc'),
+				'conditions' => array('Component.item_subtype_version_id' => $parentItemSubtypeVersionId)
+			));
+			$next_position = reset($next_position)['position_numeric']; $next_position++;
+			
+			//Component Item Subtype Version Ids
+			$compItemSubtypeVersionId = $this->request->data['itemSubtypeVersionId'];
+			if($compItemSubtypeVersionId=='') {
 				$subtypeid = $this->request->data['itemSubtypeId'];
 				$tmp = $this->ItemSubtypeVersion->find('first', array('conditions'=>array('ItemSubtype.id' => $subtypeid)));
 				$this->request->data['itemSubtypeVersionId'] = array($tmp['ItemSubtypeVersion']['id']);
@@ -749,6 +815,8 @@ class ItemSubtypeVersionsController extends AppController {
 			$project_name = $this->request->data['projectName'];
 			if(isset($this->request->data['positionName'])) $position_name = $this->request->data['positionName'];
 			else $position_name = null;
+			if(isset($this->request->data['attached'])) $attached = $this->request->data['attached'];
+			else $attached = null;
 			
 			if( ($project_id != null) && ($project_name != null) ) {
 				if(!is_array($this->request->data['itemSubtypeVersionId'])){
@@ -758,46 +826,143 @@ class ItemSubtypeVersionsController extends AppController {
 				foreach($this->request->data['itemSubtypeVersionId'] as $id) {
 					$this->ItemSubtypeVersion->id = $id;
 					if($this->ItemSubtypeVersion->exists() ) {
-						$myComponent = $this->ItemSubtypeVersion->find('first', array(
-                                          'conditions' => array('ItemSubtypeVersion.id' => $id),
-                                          'contain' => array('Manufacturer', 'ItemSubtype.ItemType')));
-						$myComponent['ItemSubtypeVersionsComposition']['project_id'] = $project_id;
-						$myComponent['ItemSubtypeVersionsComposition']['project_name'] = $project_name;
-						$myComponent['ItemSubtypeVersionsComposition']['attached'] = 0;
-						$myComponent['New'] = true;
-						$myComponent['ItemSubtypeVersionsComposition']['position'] = $next_position;
-						if(!is_null($position_name)) $myComponent['ItemSubtypeVersionsComposition']['position_name'] = $position_name;
-						$myComponent['ItemSubtypeVersionsComposition']['all_versions'] = $add_as_all_versions;
-                     
-						if(!empty($myComponent)) {
-							$myComponents[] = $myComponent;
-							$this->Session->write($session, $myComponents);
+						
+						$component['Component']['item_subtype_version_id'] = $parentItemSubtypeVersionId;
+						$component['Component']['component_id'] = $id;
+						$component['Component']['project_id'] = $project_id;
+						$component['Component']['project_name'] = $project_name;
+						$component['Component']['position'] = $next_position;
+						if(!is_null($position_name)) $component['Component']['position_name'] = $position_name;
+						if(!is_null($attached)) $component['Component']['attached'] = $attached;
+						else $component['Component']['attached'] = 0;
+						$component['Component']['all_versions'] = $add_as_all_versions;
+
+						$this->ItemSubtypeVersion->Component->create();
+						if(!$this->ItemSubtypeVersion->Component->save($component)){
+							$this->Session->setFlash(__('Component with position name "'.$component['Component']['position_name'].'" cannot be not added'), 'default', array(), 'tableForm');
+						}
+						else{
+							$this->ItemSubtypeVersion->Component->saveField('status_code',1);
 						}
 					}
 				}
 			}
 		}
-		$this->set('myComponents', $myComponents);
-		$this->render('update_components', 'ajax');
+		
+		if($this->request->data['isLastComp']=='true'){
+		
+			$paginate = array(
+				'contain' => array(
+					'ItemSubtypeVersion.ItemSubtype',
+					'ItemSubtypeVersion.ItemSubtype.ItemType.name',
+					'ItemSubtypeVersion.Manufacturer.name',
+					'Project'
+				),
+				'conditions' => array('item_subtype_version_id' => $parentItemSubtypeVersionId)
+			);
+			$this->Paginator->settings = $paginate;
+			$itemComponents = $this->paginate('Component');
+			$this->set('components', $itemComponents);
+			$this->render('update_components', 'ajax');
+			
+		}
+		else{
+			echo 'continue';
+			$this->autoRender = false;
+		}
+		
 	}
 
 	public function removeComponent() {
+
 		if($this->request->isAjax()){
+			
+			//FP Non usata (per ora la condizione è nella View)
 			if(isset($this->request->data["editWithAttached"]) && $this->request->data["editWithAttached"]==1){
 				$this->set("editWithAttached",true);
 			}else{
 				$this->set("editWithAttached",false);
 			}
-			$dummy = $this->request->data['dummy'];
-			$session = $this->request->data['session'];
+			
+			if(empty($this->request->data['componentId']) || empty($this->request->data['session']))
+				throw new Exception(__("Invalid request data"));
 
-			$myComponents = $this->Session->read($session);
-			unset($myComponents[$dummy]);
-
-			$this->Session->write($session, $myComponents);
+			//FP Inserire controllo se cancellabile o meno (usando status_code e editWithAttached)			
+			$componentId = $this->request->data['componentId'];
+			$this->ItemSubtypeVersion->Component->id = $componentId;
+			$currStatusCode = $this->ItemSubtypeVersion->Component->field('status_code');
+			$newStatusCode = $currStatusCode | 0x2;
+			if($this->ItemSubtypeVersion->Component->saveField('status_code',$newStatusCode)){
+				$this->Session->setFlash(__('Component #'.$componentId.' marked for deletion'), 'default', array('class' => 'notification'), 'tableForm');
+			}
+			else{
+				$this->Session->setFlash(__('Component #'.$componentId.' status cannot be changed'), 'default', array(), 'tableForm');
+			}
+			
 		}
-		$this->set('myComponents', $myComponents);
+		
+		$session = $this->request->data['session'];			
+		$itemSubtypeVersionId = substr(strrchr($session, "."), 1);
+		$paginate = array(
+			'contain' => array(
+				'ItemSubtypeVersion.ItemSubtype',
+				'ItemSubtypeVersion.ItemSubtype.ItemType.name',
+				'ItemSubtypeVersion.Manufacturer.name',
+				'Project'
+			),
+			'conditions' => array(
+				'item_subtype_version_id' => $itemSubtypeVersionId,
+				'status_code' => array(0x0, 0x1)
+			)
+		);
+		$this->Paginator->settings = $paginate;
+		$itemComponents = $this->paginate('Component');
+		$this->set('components', $itemComponents);
+
 		$this->render('update_components', 'ajax');
+		
+	}
+
+	public function removeAllComponents($id = null) {
+
+		if($this->request->isAjax()){
+			
+			if(empty($this->request->data['itemSubtypeVersionId']))
+				throw new Exception(__("Invalid request data"));
+			
+			$id = $this->request->data['itemSubtypeVersionId'];
+			$itemSubtypeVersionComponents = $this->ItemSubtypeVersion->Component->find('all',array(
+				'recursive' => -1,
+				'fields' => array('id','status_code'),
+				'conditions' => array ('item_subtype_version_id' => $id)
+			));
+
+			foreach($itemSubtypeVersionComponents as $key => $component){
+				$currStatusCode = $component['Component']['status_code'];
+				$newStatusCode = $currStatusCode | 0x2;
+				$this->ItemSubtypeVersion->Component->id = $component['Component']['id'];
+				$this->ItemSubtypeVersion->Component->saveField('status_code',$newStatusCode);
+			}			
+		}
+		
+		$paginate = array(
+			'contain' => array(
+				'ItemSubtypeVersion.ItemSubtype',
+				'ItemSubtypeVersion.ItemSubtype.ItemType.name',
+				'ItemSubtypeVersion.Manufacturer.name',
+				'Project'
+			),
+			'conditions' => array(
+				'item_subtype_version_id' => $id,
+				'status_code' => array(0x0, 0x1)
+			)
+		);
+		$this->Paginator->settings = $paginate;
+		$itemComponents = $this->paginate('Component');
+		$this->set('components', $itemComponents);
+
+		$this->render('update_components', 'ajax');
+		
 	}
 
 	public function subselectChanged() {
@@ -947,68 +1112,70 @@ class ItemSubtypeVersionsController extends AppController {
 				
 				foreach($cmpListFile->getSections() as $section){
 					$fileData = $cmpListFile->getSectionAsArray($section["name"]); //RIGUARDARE QUESTO LOOP, CHECK SU FILEDATA!!!
-				
+
 					$formData = array(); $firstRow = true;
 					foreach($fileData as $key_val => $value) {
 						if (is_array($value) == 1){   // array is multidimensional
-						
-							$formRow = array();
-							if($firstRow){
-								
-								$formRow[] = "ProjectId";
-								$formRow[] = "ProjectName";
-								$formRow[] = "ItemSubtypeId";
-								$formRow[] = "ItemSubtypeVersionId";
-								$formRow[] = "DEV.NAME";
-								$formRow[] = "Position";
-								$firstRow = false;
-							}
-							else{
-								
-								$formRow[] = $projectId;
-								$formRow[] = $projectName;
-								
-								//Throw error if item type/subtype/subtypeversion don't exist in DB
-								$itemTypeName = "SiPM_".substr($value[0],3)."_".$value[3];
-								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->ItemType->recursive = -1;	
-								$itemType = $this->ItemSubtypeVersion->ItemSubtype->ItemType->find("first", array("conditions" => array("ItemType.name" => $itemTypeName)));
-								if(empty($itemType)){
-									$this->set("message","wrong ItemType name. ItemType not found in DB.");
-									throw new Exception(__("wrong ItemType name. ItemType not found in DB."));
-								}
-								
-								$itemSubtypeName = $value[4]."_".$value[2]."u";
-								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->recursive = -1;	
-								$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->find("first", array("conditions" => array(
-																																																						"ItemSubtype.name" => $itemSubtypeName,
-																																																						"ItemSubtype.item_type_id" => $itemType['ItemType']['id']
-																																																						)
-																																													)
-																																						);
-								if(empty($itemSubtype)){
-									$this->set("message","wrong ItemSubtype name. ItemSubtype not found in DB.");
-									throw new Exception(__("wrong ItemSubtype name. ItemSubtype not found in DB."));
-								}
-								else $formRow[] = $itemSubtype['ItemSubtype']['id'];
-								
-								$itemSubtypeVersionVersion = $value[5];
-								$itemSubtypeVersion = $this->ItemSubtypeVersion->find("first", array("conditions" => array(
-																																																				"ItemSubtypeVersion.version" => $itemSubtypeVersionVersion,
-																																																				"ItemSubtypeVersion.item_subtype_id" => $itemSubtype['ItemSubtype']['id']
-																																																				)
-																																										)
-																																			);
-								if(empty($itemSubtypeVersion)){
-									$this->set("message","wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB.");
-									throw new Exception(__("wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB."));
-								}
-								else $formRow[] = $itemSubtypeVersion['ItemSubtypeVersion']['id'];
-								
-								$formRow[] = substr($value[6],7);
-								$formRow[] = $key_val; //Position is just the row number (headers row removed, starting from 1)
-							}
-							$formData[] = $formRow;
+							if(count(array_diff($value, array( '' ))) == 0) continue; // array is empty
 							
+							$formRow = array();
+								if($firstRow){
+									
+									$formRow[] = "ProjectId";
+									$formRow[] = "ProjectName";
+									$formRow[] = "ItemSubtypeId";
+									$formRow[] = "ItemSubtypeVersionId";
+									$formRow[] = "DEV.NAME";
+									$formRow[] = "Position";
+									$formRow[] = "IsAttached";
+									$firstRow = false;
+								}
+								else{
+								
+									$formRow[] = $projectId;
+									$formRow[] = $projectName;
+									
+									//Throw error if item type/subtype/subtypeversion don't exist in DB
+									$itemTypeName = "SiPM";
+									$this->ItemSubtypeVersion->ItemSubtype->ItemType->recursive = -1;	
+									$itemType = $this->ItemSubtypeVersion->ItemSubtype->ItemType->find("first", array("conditions" => array("ItemType.name" => $itemTypeName)));
+									if(empty($itemType)){
+										$this->set("message","wrong ItemType name. ItemType not found in DB");
+										throw new Exception(__("wrong ItemType name. ItemType not found in DB"));
+									}
+									
+									$itemSubtypeName = "SiPM ".$value[0]." ".$value[3]." mm";
+									$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->recursive = -1;	
+									$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->find("first", array("conditions" => array(
+																																																							"ItemSubtype.name" => $itemSubtypeName,
+																																																							"ItemSubtype.item_type_id" => $itemType['ItemType']['id']
+																																																							)
+																																														)
+																																							);
+									if(empty($itemSubtype)){
+										$this->set("message","wrong ItemSubtype name. ItemSubtype not found in DB");
+										throw new Exception(__("wrong ItemSubtype name. ItemSubtype not found in DB"));
+									}
+									else $formRow[] = $itemSubtype['ItemSubtype']['id'];
+									
+									$itemSubtypeVersionName = $value[4]." ".$value[2]."um"; //$value[5];
+									$itemSubtypeVersion = $this->ItemSubtypeVersion->find("first", array("conditions" => array(
+																																																					"ItemSubtypeVersion.name" => $itemSubtypeVersionName,
+																																																					"ItemSubtypeVersion.item_subtype_id" => $itemSubtype['ItemSubtype']['id']
+																																																					)
+																																											)
+																																				);
+									if(empty($itemSubtypeVersion)){
+										$this->set("message","wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB");
+										throw new Exception(__("wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB"));
+									}
+									else $formRow[] = $itemSubtypeVersion['ItemSubtypeVersion']['id'];
+									
+									$formRow[] = preg_replace("/[^a-z0-9]+/i", "", substr($value[6],7));
+									$formRow[] = $key_val; //Position is just the row number (headers row removed, starting from 1)
+									$formRow[] = true;
+								}
+							$formData[] = $formRow;
 						}
 					}
 

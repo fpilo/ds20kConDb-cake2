@@ -128,13 +128,18 @@ if(!$editWithAttached) {
 <h2><?php  echo __('Item Subtype Versions');?></h2>
 <ul id="action-menu" class="sm sm-darkblue sm-vertical">
 <li class='active first' ><?php echo $this->Html->link(__('Cancel'), array('controller' => 'itemSubtypeVersions', 'action' => 'view', $this->Form->value('ItemSubtypeVersion.id'))); ?></li>
-	<li class='has-sub'><a href='#'>Add component</a>
+<li class='has-sub'><a href='#'>Add components</a>
 	<ul>
 		<li class='active'><a id='add_single_comp' href='#'>Single</a></li>
 		<li class='active'><a id='add_multiple_comp' href='#'>Multiple</a></li>				
 	</ul>
 </li>
 <li class='active last'><?php echo $this->Html->link(__('Reload'), array('controller' => 'itemSubtypeVersions', 'action' => 'resetEdit', $this->Form->value('ItemSubtypeVersion.id'))); ?></li>
+<li class='has-sub'><a href='#'>Remove components</a>
+	<ul>
+		<li class='active'><a id='remove_all_comp' href='#' onclick='RemoveAllComponents(<?php echo $this->Form->value("ItemSubtypeVersion.id"); ?>)'>All</a></li>
+	</ul>
+</li>
 </ul>
 <?php require(dirname(__FILE__).'/../Layouts/menu.ctp'); ?>
 </div>

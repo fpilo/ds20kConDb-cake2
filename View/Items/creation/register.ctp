@@ -17,6 +17,7 @@
 		echo "<li><a href='#".$itemCode."'>".$itemCode."</a></li>";
 	}
 	echo "</ul>";
+	
 	foreach($itemCodes as $itemCode):
 		echo "<div id='".$itemCode."'>";
 		echo $this->Form->create('Item',array("class"=>"components", "default"=>false));
@@ -35,11 +36,9 @@
 				<?php
 					$this->My->showShortName = $showShortName;
 					$componentList = $this->My->listItems($components, $formName, $itemCode);
-
 					$depth = 0;
 					reset($componentList);
 					foreach($componentList as $component) {
-			#							debug($component);
 
 						//echo $component['depth']."::".$depth;
 						//echo "<br>";

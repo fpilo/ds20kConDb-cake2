@@ -16,13 +16,18 @@ class MyHelper extends AppHelper {
 	 */
 
 	public function listItems($items, $formName, $itemCode) {
+		
 		$items = $this->_getRecursiveList($items);
-
+		
 		foreach($items as $key => $item) {
 			foreach($item['field_name'] as $fieldKey =>$fieldName) {
 				$items[$key]['field_name'][$fieldKey] = 'data['.$formName.']['.$itemCode.']'.$fieldName;
 			}
-			$items[$key]['code'] = $itemCode.$item['code'];
+
+			if(!empty($item['code_prefix'])) $newItemCode = substr_replace($itemCode,$item['code_prefix'],0,strlen($item['code_prefix'])).$item['code'];
+			else $newItemCode = $itemCode.$item['code'];
+			$items[$key]['code'] = $newItemCode;
+			
 		}
 
 		return $items;
@@ -35,19 +40,25 @@ class MyHelper extends AppHelper {
 		foreach($items as $item) {
 			$newFieldPrefix = $fieldPrefix.'[Component]['.++$i.']';
 
-			$position = $item['ItemSubtypeVersionsComposition']['position'];
+			$position = $item['Component']['position'];
 			if($positionPrefix != null) {
 				$position = $positionPrefix.'.'.$position;
 			}
 
 			if($this->showShortName)
-				$code = $codePrefix .'_'.$item['ItemSubtype']['shortname'];
+				$code = $codePrefix .'_'.$item['ItemSubtypeVersion']['ItemSubtype']['shortname'];
 			else
 				$code = $codePrefix;
+			
 			// add position if necessary for uniqueness. TODO: this is broken, assumes that shortnames are unique and always used in nameing
 			//if($this->_positionNecessary($items, $item)) {
 			if(TRUE) {
-				$code .= '_'.$item['ItemSubtypeVersionsComposition']['position'];
+				if(!empty($item['Component']['position_name']) && $item['ItemSubtypeVersion']['has_components'] == 0){
+					$codePrefix = $item['ItemSubtypeVersion']['ItemSubtype']['shortname'];
+					$code = $item['Component']['position_name'];
+				} else {
+					$code .= '_'.$item['Component']['position'];
+				}
 			}
 
 			$list[] = array(
@@ -66,27 +77,29 @@ class MyHelper extends AppHelper {
 
 						// this are the values for the formular fields
 						'code' => $code,
-						'item_subtype_version_id' => $item['id'],
-						'item_type_name' => $item['ItemSubtype']['ItemType']['name'],
-						'item_subtype_name' => $item['ItemSubtype']['name'],
-						'item_subtype_version' => $item['version'],
-						'position' => $item['ItemSubtypeVersionsComposition']['position'],
+						'code_prefix' => $codePrefix,
+						'item_subtype_version_id' => $item['ItemSubtypeVersion']['id'],
+						'item_type_name' => $item['ItemSubtypeVersion']['ItemSubtype']['ItemType']['name'],
+						'item_subtype_name' => $item['ItemSubtypeVersion']['ItemSubtype']['name'],
+						'item_subtype_version' => $item['ItemSubtypeVersion']['version'],
+						'position' => $item['Component']['position'],
 						'abs_position' => $position,
 						'location_id' => $item['location_id'],
 						'state_id' => $item['state_id'],
-						'project_id' => $item['ItemSubtypeVersionsComposition']['project_id'],
-						'attached' => $item['ItemSubtypeVersionsComposition']['attached'],
-						'is_stock' => $item['ItemSubtypeVersionsComposition']['is_stock'],
-						'description' => $item['ItemSubtype']['ItemType']['name'] . ' ' . $item['ItemSubtype']['name'] . ' v' . $item['version'],
-						'has_components' => $item['has_components'],
+						'project_id' => $item['Component']['project_id'],
+						'attached' => $item['Component']['attached'],
+						'is_stock' => $item['Component']['is_stock'],
+						'description' => $item['ItemSubtypeVersion']['ItemSubtype']['ItemType']['name'] . ' ' . $item['ItemSubtypeVersion']['ItemSubtype']['name'] . ' v' . $item['ItemSubtypeVersion']['version'],
+						'has_components' => $item['ItemSubtypeVersion']['has_components'],
 						'depth' => $depth,
 						 );
 
-			if($item['has_components'] > 0) {
-				$component_list = $this->_getRecursiveList($item['Component'], $code, $newFieldPrefix, $position, $depth+1);
+			if($item['ItemSubtypeVersion']['has_components'] > 0) {
+				$component_list = $this->_getRecursiveList($item, $code, $newFieldPrefix, $position, $depth+1);
 				$list = array_merge($list, $component_list);
 			}
 		}
+	
 		return $list;
 	}
 
