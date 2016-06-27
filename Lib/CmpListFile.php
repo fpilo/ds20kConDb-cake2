@@ -121,9 +121,9 @@ class CmpListFile extends fileReader{
 		foreach($this->sections as $id=>$section){
 			if($section["name"] == $sectionName){
 				if($target !== null){
-					$target = array_map(array($this,"_interpretCsvRow"), $this->getRows($section["firstline"], $section["lastline"]));
+					$target = array_map(array($this,"_interpretCsvRow"), $this->getRows($section["firstline"], $section["firstline"]+2));
 				}else{
-					return array_map(array($this,"_interpretCsvRow"), $this->getRows($section["firstline"], $section["lastline"]));
+					return array_map(array($this,"_interpretCsvRow"), $this->getRows($section["firstline"], $section["firstline"]+2));
 				}
 			}
 		}

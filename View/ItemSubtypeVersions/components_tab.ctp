@@ -22,7 +22,7 @@ function saveData(info){
 				num += 1;
 			}
 		},
-		error: function(exception){alert('Exception: '+exception);}
+		error: function(exception){alert('Exception: ' + exception.textStatus);}
 	});
 
 }
@@ -35,6 +35,7 @@ function addComponents(data,info,num){
 	$("#get_components_div").append($div);
 	$div.hide();
 	$div.html(data);
+	//$div.fadeIn(500); //Enable to debug intermediate stages
 	
 	$("#comp_list_table tr").each(function() {
 		var arrayOfThisRow = [];
@@ -45,7 +46,8 @@ function addComponents(data,info,num){
 		}
 	});
 
-	addSingleComp(0,tableArray);
+	if(tableArray.length > 0) addSingleComp(0,tableArray);
+	
 }
 
 function addSingleComp(index,tableArray){

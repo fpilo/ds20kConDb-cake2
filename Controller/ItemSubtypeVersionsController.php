@@ -260,8 +260,10 @@ class ItemSubtypeVersionsController extends AppController {
 															'fields' => array('MAX(ItemSubtypeVersion.version) as max'),
 															'recursive' => -1
 															));
-
-		if($max_version[0]['max'] != NULL) {
+															
+		$latest_version = array();
+		$latest_version['ItemSubtypeVersion']['version'] = $max_version[0]['max'];
+		/*if($max_version[0]['max'] != NULL) { //FP tmp removed feature (wrong component syntax)
 			$max_version = $max_version[0]['max'];
 			$latest_version = $this->ItemSubtypeVersion->find('first', array(
 															'conditions' => array('AND' => array(
@@ -292,16 +294,17 @@ class ItemSubtypeVersionsController extends AppController {
 				unset($latest_version['Component'][$key]['comment']);
 			}
 		}
-		else {
-			$max_version = 0;
-		}
-
 		if ($this->Session->check('addItemSubtypeVersion.'.$id)) {
 			$myComponents = $this->Session->read('addItemSubtypeVersion.'.$id);
 		} else {
 			$myComponents = $latest_version['Component'];
 			$this->Session->write('addItemSubtypeVersion.'.$id, $myComponents);
 		}
+		
+		else {
+			$max_version = 0;
+		}*/
+
 		$this->set("editWithAttached",false); // to make the view work with update_components.ctp
 		$this->set(compact('latest_version', 'parentItemSubtype', 'projects', 'manufacturers', 'myComponents', 'componentProjects'));
 	}
@@ -1101,9 +1104,7 @@ class ItemSubtypeVersionsController extends AppController {
 						'ItemSubtype.ItemType',
 						'ItemSubtype.DbFile.User',
 						'DbFile.User',
-						'Item',
-						'Component.ItemSubtype.ItemType',
-						'Component.Manufacturer'
+						'Item'
 					)
 				));
 				
@@ -1137,21 +1138,25 @@ class ItemSubtypeVersionsController extends AppController {
 									
 									//Throw error if item type/subtype/subtypeversion don't exist in DB
 									$itemTypeName = "SiPM";
-									$this->ItemSubtypeVersion->ItemSubtype->ItemType->recursive = -1;	
-									$itemType = $this->ItemSubtypeVersion->ItemSubtype->ItemType->find("first", array("conditions" => array("ItemType.name" => $itemTypeName)));
+									$itemType = $this->ItemSubtypeVersion->ItemSubtype->ItemType->find("first", array(
+										'recursive' => -1,
+										'fields' => array('id'),
+										'conditions' => array("ItemType.name" => $itemTypeName)
+									));
 									if(empty($itemType)){
 										$this->set("message","wrong ItemType name. ItemType not found in DB");
 										throw new Exception(__("wrong ItemType name. ItemType not found in DB"));
 									}
 									
 									$itemSubtypeName = "SiPM ".$value[0]." ".$value[3]." mm";
-									$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->recursive = -1;	
-									$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->find("first", array("conditions" => array(
-																																																							"ItemSubtype.name" => $itemSubtypeName,
-																																																							"ItemSubtype.item_type_id" => $itemType['ItemType']['id']
-																																																							)
-																																														)
-																																							);
+									$itemSubtype = $this->ItemSubtypeVersion->ItemSubtype->find("first", array(
+										'recursive' => -1,
+										'fields' => array('id'),
+										'conditions' => array(
+											'ItemSubtype.name' => $itemSubtypeName,
+											'ItemSubtype.item_type_id' => $itemType['ItemType']['id']
+										)
+									));
 									if(empty($itemSubtype)){
 										$this->set("message","wrong ItemSubtype name. ItemSubtype not found in DB");
 										throw new Exception(__("wrong ItemSubtype name. ItemSubtype not found in DB"));
@@ -1159,12 +1164,14 @@ class ItemSubtypeVersionsController extends AppController {
 									else $formRow[] = $itemSubtype['ItemSubtype']['id'];
 									
 									$itemSubtypeVersionName = $value[4]." ".$value[2]."um"; //$value[5];
-									$itemSubtypeVersion = $this->ItemSubtypeVersion->find("first", array("conditions" => array(
-																																																					"ItemSubtypeVersion.name" => $itemSubtypeVersionName,
-																																																					"ItemSubtypeVersion.item_subtype_id" => $itemSubtype['ItemSubtype']['id']
-																																																					)
-																																											)
-																																				);
+									$itemSubtypeVersion = $this->ItemSubtypeVersion->find("first", array(
+										'recursive' => -1,
+										'fields' => array('id'),
+										'conditions' => array(
+											'ItemSubtypeVersion.name' => $itemSubtypeVersionName,
+											'ItemSubtypeVersion.item_subtype_id' => $itemSubtype['ItemSubtype']['id']
+										)
+									));
 									if(empty($itemSubtypeVersion)){
 										$this->set("message","wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB");
 										throw new Exception(__("wrong ItemSubtypeVersion version. ItemSubtypeVersion not found in DB"));
@@ -1175,7 +1182,7 @@ class ItemSubtypeVersionsController extends AppController {
 									$formRow[] = $key_val; //Position is just the row number (headers row removed, starting from 1)
 									$formRow[] = true;
 								}
-							$formData[] = $formRow;
+								$formData[] = $formRow;
 						}
 					}
 

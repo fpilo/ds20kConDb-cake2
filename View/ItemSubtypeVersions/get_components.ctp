@@ -1,10 +1,5 @@
-<script type="text/javascript">
-$(document).ready(function () {
-});
-</script>
-
 <?php if (isset($message)): ?>
-	<p class="error-message error"><?php echo $message ?></p>
+	<p class="error-message error"><?php echo $message; ?></p>
 <?php endif; ?>
 
 <div>
