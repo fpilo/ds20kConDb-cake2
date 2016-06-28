@@ -163,11 +163,14 @@
 						return $output;
 					}
 					?>
-					<dt id="itemHierachyButton">Full item hierachy</dt>
+					<dt id="itemHierachyButton">Full item hierachy <br />(<?php echo sizeof($allComponents); ?> components)</dt>
 					<dd id="itemHierachy" style="display:inline-block; overflow:hidden; ">
 						<?php
+						$compCounter = 0;
 						foreach($allComponents as $component){
+							if($compCounter > 5){ echo "... (full components list tmp. disabled)"; break; }
 							echo displayComponentsRecursively($component);
+							$compCounter++;
 						}
 						?>
 					</dd>
