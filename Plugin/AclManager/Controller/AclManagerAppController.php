@@ -33,9 +33,6 @@ class AclManagerAppController extends AppController {
 			$this->request->params['action'] = str_replace($prefix . "_", "", $this->request->params['action']);
 			$this->view = str_replace($prefix . "_", "", $this->view);
 		}
-
 	}
-	
-	
 }
 
