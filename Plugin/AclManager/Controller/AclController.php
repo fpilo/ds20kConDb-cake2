@@ -127,7 +127,7 @@ class AclController extends AclManagerAppController {
 			"SELECT * FROM acos as Aco
 				LEFT JOIN aros_acos as Permission on Permission.aco_id = Aco.id AND
 					Permission.aro_id IN({$aroIds})
-				ORDER BY Aco.lft ASC Limit 9
+				ORDER BY Aco.lft ASC
 			"
 		);
 		// add Aro key along side each Aco
