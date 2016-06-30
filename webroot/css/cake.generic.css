@@ -1100,6 +1100,20 @@ td.showDragHandle {
 	cursor: move;
 }
 
+/* ACL Manager classes*/
+table tr.aclmanager-ident-1 {
+	background: #f5f5f5;
+}
+
+table tr.aclmanager-ident-2,
+table tr.aclmanager,
+{
+	background: #ffffff;
+}
+
+/* End */
+
+/* Checklist classes*/
 .clAction.close {
 	background: #f5f5f5;
 }
@@ -1112,6 +1126,8 @@ td.showDragHandle {
 .clAction.open {
 	background: #ffffff;
 }
+/* End */
+
 #selectorOverlay, #overlay{
 	background-color:white;
 	position: absolute;
@@ -1130,3 +1146,5 @@ html.busy, html.busy * {
 	height:20px;
 	cursor: pointer;
 }
+
+

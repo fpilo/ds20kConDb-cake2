@@ -86,6 +86,7 @@ class AclController extends AclManagerAppController {
 			foreach ($perms as $aco => $aros) {
 				$action = str_replace(":", "/", $aco);
 				foreach ($aros as $node => $perm) {
+					//debug($node." ".$action);
 					list($model, $id) = explode(':', $node);
 					$node = array('model' => $model, 'foreign_key' => $id);
 					if ($perm == 'allow') {
@@ -126,7 +127,7 @@ class AclController extends AclManagerAppController {
 			"SELECT * FROM acos as Aco
 				LEFT JOIN aros_acos as Permission on Permission.aco_id = Aco.id AND
 					Permission.aro_id IN({$aroIds})
-				ORDER BY Aco.lft ASC
+				ORDER BY Aco.lft ASC Limit 9
 			"
 		);
 		// add Aro key along side each Aco
@@ -142,10 +143,11 @@ class AclController extends AclManagerAppController {
 		$this->acos = $acos;
 		$perms = array();
 		$parents = array();
+		
 		foreach ($acos as $key => $data) {
 			$aco =& $acos[$key];
 			$id = $aco['Aco']['id'];
-
+			
 			// Generate path
 			if ($aco['Aco']['parent_id'] && isset($parents[$aco['Aco']['parent_id']])) {
 				$parents[$id] = $parents[$aco['Aco']['parent_id']] . '/' . $aco['Aco']['alias'];
@@ -153,22 +155,38 @@ class AclController extends AclManagerAppController {
 				$parents[$id] = $aco['Aco']['alias'];
 			}
 			$aco['Action'] = $parents[$id];
+			
+			$currAro = $this->Acl->Aro->find('first', array(
+				'conditions' => array(
+					'Aro.id' => $aco['Permission']['aro_id']
+				),
+				'recursive' => -1
+			));
 
 			// Fetching permissions per ARO
 			$acoNode = $aco['Action'];
-			foreach($aros as $aro) {
-				$aroId = $aro[$Aro->alias][$Aro->primaryKey];
-				$evaluate = $this->_evaluate_permissions($permKeys, array('id' => $aroId, 'alias' => $Aro->alias), $aco, $key);
-
-				$perms[str_replace('/', ':', $acoNode)][$Aro->alias . ":" . $aroId . '-inherit'] = $evaluate['inherited'];
-				$perms[str_replace('/', ':', $acoNode)][$Aro->alias . ":" . $aroId] = $evaluate['allowed'];
+			foreach($aros as $aro) {			
+				$aroId = $aro[$Aro->alias][$Aro->primaryKey];				
+				if($currAro==null){
+					$evaluate = $this->_evaluate_permissions($permKeys, array('foreign_key' => $aroId, 'alias' => $Aro->alias), $aco, $key);
+					$perms[str_replace('/', ':', $acoNode)][$Aro->alias . ":" . $aroId . '-inherit'] = $evaluate['inherited'];
+					$perms[str_replace('/', ':', $acoNode)][$Aro->alias . ":" . $aroId] = $evaluate['allowed'];
+					break;
+				}
+				elseif($aroId == $currAro['Aro']['foreign_key']){
+					$evaluate = $this->_evaluate_permissions($permKeys, array('id' => $currAro['Aro']['id'], 'foreign_key' => $aroId, 'alias' => $Aro->alias), $aco, $key);
+					$perms[str_replace('/', ':', $acoNode)][$Aro->alias . ":" . $aroId . '-inherit'] = $evaluate['inherited'];
+					$perms[str_replace('/', ':', $acoNode)][$Aro->alias . ":" . $aroId] = $evaluate['allowed'];
+					break;
+				}
 			}
 		}
 
 		$this->request->data = array('Perms' => $perms);
 		$this->set('aroAlias', $Aro->alias);
 		$this->set('aroDisplayField', $Aro->displayField);
-		$this->set('aroList', array_values($this->{$Aro->alias}->find('list')));
+		$aroList = array_values($this->{$Aro->alias}->find('list'));
+		$this->set('aroList', $aroList);
 		$this->set(compact('acos', 'aros'));
 	}
 
@@ -208,35 +226,38 @@ class AclController extends AclManagerAppController {
 			if ($aco['Aco']['parent_id'] == null) {
 				$this->lookup +=1;
 				$acoNode = (isset($aco['Action'])) ? $aco['Action'] : null;
-				$aroNode = array('model' => $aro['alias'], 'foreign_key' => $aro['id']);
+				$aroNode = array('model' => $aro['alias'], 'foreign_key' => $aro['foreign_key']);
 				$allowed = $this->Acl->check($aroNode, $acoNode);
-				$this->acos[$aco_index]['evaluated'][$aro['id']] = array(
+				$this->acos[$aco_index]['evaluated'][$aro['foreign_key']] = array(
 					'allowed' => $allowed,
 					'inherited' => true
 				);
 			}
 			else {
+					
 				/**
 				 * Do not use Set::extract here. First of all it is terribly slow,
 				 * besides this we need the aco array index ($key) to cache are result.
 				 */
 				foreach ($this->acos as $key => $a) {
-					if ($a['Aco']['id'] == $aco['Aco']['parent_id']) {
-						$parent_aco = $a;
-						break;
+					if ($a['Aco']['id'] == $aco['Aco']['parent_id']){
+						if(empty($aro['id']) || ($a['Permission']['aro_id'] == $aro['id'])){
+							$parent_aco = $a;
+							break;
+						}
 					}
 				}
+
 				// Return cached result if present
-				if (isset($parent_aco['evaluated'][$aro['id']])) {
-					return $parent_aco['evaluated'][$aro['id']];
+				if (isset($parent_aco['evaluated'][$aro['foreign_key']])) {
+					return $parent_aco['evaluated'][$aro['foreign_key']];
 				}
 
 				// Perform lookup of parent aco
 				$evaluate = $this->_evaluate_permissions($permKeys, $aro, $parent_aco, $key);
-
 				// Store result in acos array so we need less recursion for the next lookup
-				$this->acos[$key]['evaluated'][$aro['id']] = $evaluate;
-				$this->acos[$key]['evaluated'][$aro['id']]['inherited'] = true;
+				$this->acos[$key]['evaluated'][$aro['foreign_key']] = $evaluate;
+				$this->acos[$key]['evaluated'][$aro['foreign_key']]['inherited'] = true;
 
 				$allowed = $evaluate['allowed'];
 			}
