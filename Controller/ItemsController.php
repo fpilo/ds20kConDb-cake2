@@ -149,8 +149,7 @@ class ItemsController extends AppController {
 		$this->set(compact("locations"));
 	}
 
-
-	/*
+	/**
 	 * This function displays the view with tabbed components to enable configuration an creation of multiple items at once
 	 *
 	 */
@@ -246,12 +245,10 @@ class ItemsController extends AppController {
 		
 	}
 
-
 	private function _view_tabbed_component_register(){
 		$this->set("itemCodes",$this->Item->separate($this->request->data["Item"]["code"]));
 		$this->_view_component_register();
 	}
-
 
 	private function _view_component_register(){
 		
@@ -276,13 +273,11 @@ class ItemsController extends AppController {
 		
 	}
 
-
 	/**
 	 * This internal function registers an item and its components in the database if all the parameters have been set correctly.
 	 *
 	 */
-	private function _register_item($data = null)
-	{
+	private function _register_item($data = null){
 		if($data == null)
 			$data = $this->request->data;
 		
@@ -330,7 +325,6 @@ class ItemsController extends AppController {
 			debug($this->Item->validationErrors);
 		}
 	}
-
 
 	/**
 	 * This internal function checks if all the required parameters for a stock item are set
@@ -620,18 +614,18 @@ class ItemsController extends AppController {
 		$this->set(compact('items', 'filter', 'locations', 'itemSubtypeVersions','states','itemTags','itemQualities'));
 	}
 
-/**
- * index method
- *
- * @return void
- */
+	/**
+	 * index method
+	 *
+	 * @return void
+	 */
 	public function index() {
 
 		if(!empty($this->request->data)) {
-			//received new settings for the search
+			//New settings for the search
 			$filter = $this->request->data;
 			$oldFilter = $this->Session->read('ItemIndexFilter');
-			//Comparing old and new filter
+			//Compare old and new filter
 			//if the amount of items per page changed reset the current page to the first
 			if(isset($oldFilter["limit"])){
 				if($filter["limit"] != $oldFilter["limit"]){
@@ -686,6 +680,7 @@ class ItemsController extends AppController {
 						"joins" =>$this->paginate["joins"],
 						"group"=>$this->Paginator->settings["group"]
 						));
+			debug($currentCount);
 			#$this->_runtime("First count");
 			$countfilter['show_all'] = 1;
 			$count = $this->ItemView->find('count', array(
@@ -693,6 +688,7 @@ class ItemsController extends AppController {
 						"joins" =>$this->paginate["joins"],
 						"group"=>$this->Paginator->settings["group"]
 						));
+			debug($count);
 			#$this->_runtime("Second count");
 
 			if($count-($currentCount) > 0)
@@ -719,11 +715,12 @@ class ItemsController extends AppController {
 		}
 		#$this->_runtime("Additional locations count");
 
-		if($count > 0) {
-         $additional = count($items)>0 ? ' additional' : ''; //Set additional if applicable
+		if($count > 0){
+      $additional = count($items)>0 ? ' additional' : ''; //Set additional if applicable
 			$are_is_items = $count==1 ? 'is one'.$additional.' item' : 'are '.$count.$additional.' items'; //Proper english
 			$message .= __('There '.$are_is_items.' in an unselected location that matches your search criteria. <a onClick="searchWithAllLocations();" style="cursor:pointer;">Click here to search including all your locations.</a><br />');
-      }
+    }
+		
 		/*
 		 * Check if there are items in transfers that match the criteria
 		 *
@@ -871,12 +868,12 @@ class ItemsController extends AppController {
 	    $this->set('data', $data);
 	}
 
-/**
- * view method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * view method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function view($id = null) {
 		
 		$this->loadModel('MeasurementTagsMeasurement');
@@ -1031,16 +1028,16 @@ class ItemsController extends AppController {
 		}
 	}
 
-/**
- * postRegistration method
- *
- * @param string $id The id of the parent item
- * @param string $pos The position of the component, which should be registered subsequent
- * @return void
- *
- * Allows a post registration of components of an item.
- * For example: A wafer was registered without the main sensor because the sensor was delivered weeks later.
- */
+	/**
+	 * postRegistration method
+	 *
+	 * @param string $id The id of the parent item
+	 * @param string $pos The position of the component, which should be registered subsequent
+	 * @return void
+	 *
+	 * Allows a post registration of components of an item.
+	 * For example: A wafer was registered without the main sensor because the sensor was delivered weeks later.
+	 */
 	public function postRegistration($id = null) {
 		// Check if the necessary array from the html form was transmitted
 		if($this->request->is('post'))	{
@@ -1119,7 +1116,6 @@ class ItemsController extends AppController {
 		$this->Session->delete('NewSelection');
 		$this->Session->delete('Selections');
 	}
-
 
 	private function _associateChecklist(&$item){
 		//Associate default checklist if exists
@@ -1310,15 +1306,14 @@ class ItemsController extends AppController {
 		$this->set(compact ('transaction'));
 	}
 
-    /**
-     * addItemComposition method
-     *
-     * @return void
-     *
-     * Registers a bunch of items, which can have components.
-     *
-     */
-
+	/**
+	 * addItemComposition method
+	 *
+	 * @return void
+	 *
+	 * Registers a bunch of items, which can have components.
+	 *
+	 */
 	public function addItemComposition() {
 
 		// read input data from Item\add
@@ -1467,13 +1462,11 @@ class ItemsController extends AppController {
 		return $codes;
 	}
 
-
 	public function cancelAssemble() {
 		$session = $this->sessionAssembleItemComposition;
 		$this->Session->delete($session);
 		return $this->redirect(array('action' => 'assemble'));
 	}
-
 
 	public function removeFromSelection($position = null) {
 		$session = $this->sessionAssembleItemComposition;
@@ -1484,9 +1477,9 @@ class ItemsController extends AppController {
 		return $this->redirect(array('action' => 'assembleItemComposition'));
 	}
 
-/*
- * $item_subtype_id ... id of the CompositeItemSubtype
- */
+	/**
+	 * $item_subtype_id ... id of the CompositeItemSubtype
+	 */
 	public function assembleItemComposition() {
 		$session = $this->sessionAssembleItemComposition;
 		$assemble = $this->Session->read($session);
@@ -1644,7 +1637,6 @@ class ItemsController extends AppController {
 		$this->set(compact('assemble', 'itemQualities','itemTags'));
 	}
 
-
 	public function selectFromInventory($position,$item_subtype_version_id,$stockItem=false){
 		$data = $this->Session->read("ItemData");
 		
@@ -1735,12 +1727,12 @@ class ItemsController extends AppController {
 		return $this->redirect(array('controller' => 'transfers', 'action' => 'add'));
 	}
 
-/**
- * changeCode method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * changeCode method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function changeCode($id = null) {
 		$this->Item->id = $id;
 		if (!$this->Item->exists()) {
@@ -1854,12 +1846,12 @@ class ItemsController extends AppController {
 		$this->set(compact('item'));
 	}
 
-/**
- * changeState method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * changeState method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function changeState($id = null) {
 
 		$this->Item->id = $id;
@@ -1902,13 +1894,12 @@ class ItemsController extends AppController {
 		$this->set(compact('states'));
 	}
 
-
-/**
- * changeProject method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * changeProject method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function changeProject($id = null) {
 		$this->Item->id = $id;
 		if (!$this->Item->exists()) {
@@ -1963,12 +1954,12 @@ class ItemsController extends AppController {
 		$this->set(compact('projects', 'item'));
 	}
 
-/**
- * delete method
- *
- * @param string $id
- * @return void
- */
+	/**
+	 * delete method
+	 *
+	 * @param string $id
+	 * @return void
+	 */
 	public function delete($id = null, $code = null) {
 		//debug($this->request->data);
 		if (!$this->request->is('post')) {
@@ -2084,13 +2075,10 @@ class ItemsController extends AppController {
 		return $newComponents;
 	}
 
-
-
-	/*
+	/**
 	 * Detach method detaches an item from another at the given position (after sanity checks)
 	 * If the given item Id is a stock item Id the item can also be added back to the stock (user Input)
 	 */
-
 	public function detach($itemId,$componentId,$position,$addBackToStock = false){
 		if($this->request->isAjax()){
 
@@ -2140,12 +2128,11 @@ class ItemsController extends AppController {
 
 	}
 
-	/*
+	/**
 	 * Attach method attaches an item to another at the given position (after sanity checks)
 	 * If the given item Id is a stock item Id the item is also attached and the stock item amount at the current position of the item is reduced by one.
 	 *
 	 */
-
 	public function attach($itemId,$componentId,$position){
 
 		if($this->request->isAjax()){
@@ -2286,8 +2273,8 @@ class ItemsController extends AppController {
 		$file->close();
 		//*/
     }
-	public function changeQuality($id=null)
-	{
+	
+	public function changeQuality($id=null){
 		$this->Item->id = $id;
 		if (!$this->Item->exists()) {
 			throw new NotFoundException(__('Invalid item'));
@@ -2326,7 +2313,6 @@ class ItemsController extends AppController {
 		}
 		$this->set(compact('qualities'));
 	}
-
 
 	public function changeMultiple(){
 		//Needs to be a post request with an array of item Ids that are supposed to be changed
@@ -2370,8 +2356,7 @@ class ItemsController extends AppController {
 		// debug($projectsItemTypes);
 	}
 
-	public function changeTags($id=null)
-	{
+	public function changeTags($id=null){
 		$this->Item->id = $id;
 		if (!$this->Item->exists()) {
 			throw new NotFoundException(__('Invalid item'));
@@ -2384,7 +2369,6 @@ class ItemsController extends AppController {
 		$this->set("item", $this->Item->read(null, $id));
 
 	}
-
 
 	public function setTagsForItem($id=null){
 		if($this->request->isAjax){
@@ -2425,12 +2409,12 @@ class ItemsController extends AppController {
 			throw new NotFoundException(__('Invalid Request'));
 		}
 	}
+
 	/**
 	 * Adds the tag with the given $tag_id to the item with $id
 	 * Only reacts to ajax requests
 	 */
-	public function addTag($id=null,$tag_id=null)
-	{
+	public function addTag($id=null,$tag_id=null){
 		if($this->request->isAjax){
 			if($id != null && $tag_id != null){
 				$this->autoRender = false;
@@ -2488,8 +2472,7 @@ class ItemsController extends AppController {
 
 	}
 
-	public function changeComment($id=null)
-	{
+	public function changeComment($id=null){
 		$this->Item->id = $id;
 		if (!$this->Item->exists()) {
 			throw new NotFoundException(__('Invalid item'));
@@ -2561,6 +2544,7 @@ class ItemsController extends AppController {
 			return '<div id="flashMessage" class="flash failure">'.$message.'</div>';
 		return true;
 	}
+	
 	private function _warning($message,$echo = true){
 		if($echo)
 			echo '<div id="flashMessage" class="flash warning">'.$message.'</div>';
@@ -2761,6 +2745,7 @@ class ItemsController extends AppController {
 		}
 
 	}
+	
 	/***
 	 * Returns a list of a requested item characteristic for one or multiple different item classifications
 	 */
@@ -2863,5 +2848,6 @@ class ItemsController extends AppController {
 			echo json_encode($return);
 		}
 	}
+
 }
 

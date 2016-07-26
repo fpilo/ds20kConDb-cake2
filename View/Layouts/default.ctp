@@ -137,7 +137,7 @@
 															'border' => '0',
 															'width'=>'16',
 															'height'=>'16',
-															'url' => 'https://bitbucket.org/hephy/hephydb/issues',
+															'url' => 'https://bitbucket.org/',
 															'linkOptions' => array('target' => '_blank')
 															));
 															if($_SERVER["HTTP_HOST"] == "localhost"){
