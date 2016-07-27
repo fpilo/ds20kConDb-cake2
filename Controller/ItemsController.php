@@ -680,7 +680,6 @@ class ItemsController extends AppController {
 						"joins" =>$this->paginate["joins"],
 						"group"=>$this->Paginator->settings["group"]
 						));
-			debug($currentCount);
 			#$this->_runtime("First count");
 			$countfilter['show_all'] = 1;
 			$count = $this->ItemView->find('count', array(
@@ -688,7 +687,6 @@ class ItemsController extends AppController {
 						"joins" =>$this->paginate["joins"],
 						"group"=>$this->Paginator->settings["group"]
 						));
-			debug($count);
 			#$this->_runtime("Second count");
 
 			if($count-($currentCount) > 0)
