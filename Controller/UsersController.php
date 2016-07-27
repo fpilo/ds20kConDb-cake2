@@ -295,13 +295,13 @@ class UsersController extends AppController {
 		return $this->redirect(array('action' => 'index'));
 	}
 
-/* Hide Links for unauthorized users
- *
- * Session: http://www.justkez.com/understanding-cakephp-sessions/
- */
+	/* Hide Links for unauthorized users
+	 *
+	 * Session: http://www.justkez.com/understanding-cakephp-sessions/
+	 */
 	public function login() {
 
-        if ($this->Session->read('Auth.User')) {
+     if ($this->Session->read('Auth.User')) {
 			$this->Session->setFlash('You are logged in!', 'default', array('class' => 'notification'));
 			return $this->redirect('/', null, false);
 		}
@@ -327,7 +327,7 @@ class UsersController extends AppController {
 				sleep(2);
 			}
 		}
-    }
+  }
 
 	/*
 	 * function _updateAuthSession
@@ -335,7 +335,6 @@ class UsersController extends AppController {
 	 * Saving an array of all controller/actions for validating
 	 * access rights.
 	 * */
-
 	protected function _updateAuthSession() {
 		/* If group ACL's is not enough and you need also the possibility to make individual changes for users.
 		 * Then you will need something like this:
@@ -364,8 +363,8 @@ class UsersController extends AppController {
 		 * or just get $aco for each $aro_id and merge this arrays
 		 */
 
-		$acoList = $this->Acl->Aco->Permission->find('all', array('conditions' => array('Aro.id' => $aro_ids)));
-
+		$acoList = $this->Acl->Aco->Permission->find('all', array('conditions' => array('Aro.foreign_key' => $aro_ids)));
+		
 		foreach($acoList as $tmpaco) {
 			if($tmpaco['Aco']['parent_id'] == NULL) {
 				$root = $tmpaco['Aco'];
@@ -451,17 +450,107 @@ class UsersController extends AppController {
 		
 		//Enable what follows to populate the acos_aros table
 		$this->Auth->allow('initDB');
+		
 	}
 
-	public function initDB() {
+	public function initDB($group_id) {
+		
+		if(!isset($group_id)){
+			echo "Please specify a valid group_id";
+			exit;
+		}
 		
 		$group = $this->User->Group;
-
+		
+		/**
+		 * Build aco list
+		 */
+		$acos = $this->Acl->Aco->query(
+			"SELECT * FROM acos as Aco
+				ORDER BY Aco.lft ASC
+			"
+		);
+		
+		$tmpAcos = array();
+		foreach($acos as $aco){
+			$tmpAco = $aco['Aco'];
+			$tmpAcos[] = $tmpAco;
+		}
+		
+		$acos = $tmpAcos;
+		foreach($acos as $aco){
+			$alias = $aco['alias'];
+			if($aco['parent_id']!=null){
+				$parentIds[0] = array_search($aco['parent_id'], array_column($acos, 'id'));
+				$alias = $acos[$parentIds[0]]['alias']."/".$alias;
+				
+				if($acos[$parentIds[0]]['parent_id']!=null){
+					$parentIds[1] = array_search($acos[$parentIds[0]]['parent_id'], array_column($acos, 'id'));
+					$alias = $acos[$parentIds[1]]['alias']."/".$alias;
+				}
+			}		
+			
+			$acosAlias[] = $alias;
+		}
+		
+		$group->id = $group_id; //1 - Administrators
+		foreach($acosAlias as $alias){
+			if(substr_count($alias, '/')==0) $this->Acl->allow($group, $alias);
+			if(substr_count($alias, '/')==1) $this->Acl->inherit($group, $alias);
+			if(substr_count($alias, '/')>=2) $this->Acl->inherit($group, $alias);
+		}
+		
 		// Allow admins to everything
-		$group->id = 1;
-		$this->Acl->allow($group, 'controllers');
-		$this->Acl->allow($group, 'controllers/users');
+		/**
+		debug($this->Acl->check($group, 'controllers/Stocks')); die;
 
+		$this->Acl->allow($group, 'controllers');
+		$this->Acl->allow($group, 'controllers/Checklists');
+		$this->Acl->allow($group, 'controllers/ClActions');
+		$this->Acl->allow($group, 'controllers/ClStates');
+		$this->Acl->allow($group, 'controllers/ClTemplates');
+		$this->Acl->allow($group, 'controllers/DbFiles');
+		$this->Acl->allow($group, 'controllers/Deliverers');
+		$this->Acl->allow($group, 'controllers/Devices');
+		$this->Acl->allow($group, 'controllers/Events');
+		$this->Acl->allow($group, 'controllers/Groups');
+		$this->Acl->allow($group, 'controllers/Histories');
+		$this->Acl->allow($group, 'controllers/ItemQualities');
+		$this->Acl->allow($group, 'controllers/ItemSubtypeVersions');
+		$this->Acl->allow($group, 'controllers/ItemSubtypes');
+		$this->Acl->allow($group, 'controllers/ItemTags');
+		$this->Acl->allow($group, 'controllers/ItemTypes');
+		$this->Acl->allow($group, 'controllers/Items');
+		$this->Acl->allow($group, 'controllers/Locations');
+		$this->Acl->allow($group, 'controllers/LocationsUsers');
+		$this->Acl->allow($group, 'controllers/LogEvents');
+		$this->Acl->allow($group, 'controllers/Logs');
+		$this->Acl->allow($group, 'controllers/Manufacturers');
+		$this->Acl->allow($group, 'controllers/Matchings');
+		$this->Acl->allow($group, 'controllers/MeasurementParameters');
+		$this->Acl->allow($group, 'controllers/MeasurementQueues');
+		$this->Acl->allow($group, 'controllers/MeasurementSets');
+		$this->Acl->allow($group, 'controllers/MeasurementTags');
+		$this->Acl->allow($group, 'controllers/MeasurementTypes');
+		$this->Acl->allow($group, 'controllers/Measurements');
+		$this->Acl->allow($group, 'controllers/MeasuringPoints');
+		$this->Acl->allow($group, 'controllers/Pages');
+		$this->Acl->allow($group, 'controllers/Parameters');
+		$this->Acl->allow($group, 'controllers/Projects');
+		$this->Acl->allow($group, 'controllers/ProjectsItemTypes');
+		$this->Acl->allow($group, 'controllers/ProjectsUsers');
+		$this->Acl->allow($group, 'controllers/Readings');
+		$this->Acl->allow($group, 'controllers/States');
+		$this->Acl->allow($group, 'controllers/Stocks');
+		$this->Acl->allow($group, 'controllers/Transfers');
+		$this->Acl->allow($group, 'controllers/Users');
+		$this->Acl->allow($group, 'controllers/AclExtras');
+		$this->Acl->allow($group, 'controllers/AclManager');
+		$this->Acl->allow($group, 'controllers/Filter');
+		$this->Acl->allow($group, 'controllers/Plupload');
+		$this->Acl->allow($group, 'controllers/Search');
+		$this->Acl->allow($group, 'controllers/DebugKit');
+*/
 		// we add an exit to avoid an ugly "missing views" error message
 		echo "all done";
 		exit;

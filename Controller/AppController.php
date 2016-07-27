@@ -42,17 +42,17 @@ class AppController extends Controller {
 						'Actions' => array('actionPath' => 'controllers')
 					),
 					'loginAction' => array(
-					       'controller' => 'users',
-					       'action' => 'login'
-                    ),
-                    'logoutRedirect' => array(
-                            'controller' => 'users',
-                            'action' => 'login'
-                    ),
-                    'loginRedirect' => array(
-                            'controller' => 'items',
-                            'action' => 'index'
-                    )
+						'controller' => 'users',
+						'action' => 'login'
+					),
+					'logoutRedirect' => array(
+									'controller' => 'users',
+									'action' => 'login'
+					),
+					'loginRedirect' => array(
+									'controller' => 'items',
+									'action' => 'index'
+					)
 				),
 				'DebugKit.Toolbar',
 				'Session'
@@ -64,6 +64,7 @@ class AppController extends Controller {
 				'Session', 'Js' => array('Jquery'),
 				'My'
 	);
+	
 	public $paginate=array();
 
 	public function beforeFilter(){		
@@ -105,9 +106,12 @@ class AppController extends Controller {
 
 	public function beforeRender() {
 	    
+		//Enable what follows to debug user permissions
+		//debug($this->Session->read("Auth"));		
+			
 		// Before Loading a new page save the url of the current site
-	    // So a back button can be realized easily by calling:
-	    //     echo $this->Html->link(__('Back'), $referer);
+	  // So a back button can be realized easily by calling:
+	  //     echo $this->Html->link(__('Back'), $referer);
 		$this->set('referer',$this->referer());
 		if(CakeSession::read("User")!=null){
 			

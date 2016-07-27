@@ -130,6 +130,7 @@ class AclController extends AclManagerAppController {
 				ORDER BY Aco.lft ASC
 			"
 		);
+
 		// add Aro key along side each Aco
 		foreach($acos as $key => $row) {
 			$extractedAros = Hash::extract($aroRecords, '{n}.Aro');
