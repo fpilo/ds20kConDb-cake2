@@ -471,7 +471,7 @@ class Item extends AppModel {
 				$newComponent['Item']['code']			= $component['code'];
 				$newComponent['Item']['item_subtype_version_id']= $component['item_subtype_version_id'];
 				$newComponent['Item']['location_id'] 	= $component['location_id'];
-				$newComponent['Item']['item_quality_id']= 6;
+				$newComponent['Item']['item_quality_id']= 1; //default quality, i.e. quality := unknown
 				$newComponent['Item']['project_id'] 	= $component['project_id'];
 				$newComponent['Item']['state_id'] 		= 1; //default state, i.e. state := unset
 				$newComponent['Item']['comment']		= "";
@@ -625,7 +625,7 @@ class Item extends AppModel {
 		return $status;
 	}
 
-	public function saveAssembledItem($assemble) {
+	public function saveAssembledItem($assemble){
 		$itemHistories = array();
 		$event_ids = $this->History->Event->getEventIds(array('Item created', 'Item attached', 'Item detached'));
 
@@ -700,7 +700,7 @@ class Item extends AppModel {
 		return false;
 	}
 
-	public function changeLocationRecursive($item, $deliverer, $fromId, $toId, $parentId = null) {
+	public function changeLocationRecursive($item, $deliverer, $fromId, $toId, $parentId = null){
 		if($this->isStock($item["Item"]["id"]) && $parentId == null){
 #			debug($item["Item"]["id"]."Is a stock item and not attached, add amount to target location and remove amount from current location");
 			//Is a stock item and not attached, add amount to target location and remove amount from current location
@@ -728,9 +728,7 @@ class Item extends AppModel {
 		}
 	}
 
-
-
-	public function changeLocationRecursiveOld($item_id, $deliverer, $from, $to, $event_id, $parent_id = null) {
+	public function changeLocationRecursiveOld($item_id, $deliverer, $from, $to, $event_id, $parent_id = null){
 
 		$this->useModel( array('Component', 'Location') );
 		$item = $this->find('first', array(
@@ -775,16 +773,15 @@ class Item extends AppModel {
 	 * @param string $code
 	 * @return boolean true if $code is already used for an item, else returns false.
 	 */
-	public function hasItem($code) {
+	public function hasItem($code){
 		$conditions = array('Item.code' => $code);
 		return $this->hasAny($conditions);
 	}
 
-    /**
-     *
-     */
-
-    public function postRegistration($item) {
+	/**
+	 *
+	 */
+  public function postRegistration($item){
         $event_id = $this->History->Event->getEventId('Post registered');
 
         $dataSource = $this->getDataSource();
@@ -817,7 +814,7 @@ class Item extends AppModel {
 	 *
 	 * @return boolean
 	 */
-	public function hasComponents($itemId) {
+	public function hasComponents($itemId){
 		$item = $this->find('first', array(
 				'conditions' => array('Item.id' => $itemId),
 				'contain' => array('Component')
@@ -880,7 +877,6 @@ class Item extends AppModel {
 	 * 
 	 * @return array $return containing a nested layout of the (sub)components of this item
 	 */
-	
 	public function getValidComponentsRecursive($itemId,&$return=array()){
 		$tmp = $this->getValidComponents($itemId);
 		foreach($tmp as $item){
@@ -903,7 +899,7 @@ class Item extends AppModel {
 	 *
 	 * @return array returns
 	 */
-	public function getValidComponents($itemId) {
+	public function getValidComponents($itemId){
 		$item = $this->find('first', array(
 				'conditions' => array('Item.id' => $itemId),
 				'contain' => array('Component')
@@ -931,8 +927,7 @@ class Item extends AppModel {
    * return item(s) that the item in question is a part of.
    * recursive until it hits an item that is not attached to anything itself
    */
-
-   public function getIsPartOfRecursive($itemId,$only_valid=true,&$return=array()) {
+  public function getIsPartOfRecursive($itemId,$only_valid=true,&$return=array()) {
       $tmp = $this->getIsPartOf($itemId,$only_valid);
       if(!empty($tmp)) {
          $element = reset($tmp); // because the key could be any number
@@ -941,7 +936,8 @@ class Item extends AppModel {
       }
       return $return;
    }
-   public function getIsPartOf($itemId,$only_valid=true) {
+  
+	public function getIsPartOf($itemId,$only_valid=true) {
       $item = $this->find('first', array(
             'conditions' => array('Item.id'=>$itemId),
             'contain' => array('CompositeItem')
@@ -964,7 +960,6 @@ class Item extends AppModel {
 	 * @param string $itemId The id of the item
 	 * @return boolean Returns true if the state changed, false if not
 	 */
-
 	public function updateState($itemId){
 
 		$item = $this->find('first', array(
@@ -1084,10 +1079,10 @@ class Item extends AppModel {
 	public function getTagsForItem($itemId){
 		return $this->ItemTagsItem->query("SELECT id,name FROM `item_tags` as ItemTag WHERE id in (SELECT item_tag_id FROM item_tags_items WHERE item_id = $itemId)");
 	}
+
 	public function getSetComponents($itemId){
 		return array(0=>count($this->getValidComponents($itemId)),1=>$this->getNumberOfComponents($itemId));
 	}
-	
 	
 	public function getParentItemIdsRecursive($itemId = null,$ids = array()){
 		$tmp = $this->find('first', array(
@@ -1111,4 +1106,5 @@ class Item extends AppModel {
 			}
 		return false;
 	}
+
 }

@@ -278,8 +278,8 @@ class ItemsController extends AppController {
 	 *
 	 */
 	private function _register_item($data = null){
-		if($data == null)
-			$data = $this->request->data;
+		
+		if($data == null) $data = $this->request->data;
 		
 		$eventIds = $this->Item->History->Event->getEventIds(array('Item created', 'Item attached', 'Item detached'));
 
@@ -302,8 +302,7 @@ class ItemsController extends AppController {
 		//add the history event for item creation
 		$history[] = array(	'event_id' 	=> $eventIds["Item created"],
 							'comment'	=> $newItemInsert['Item']['comment']);
-
-		$newItemInsert['History']	   = $history;
+		$newItemInsert['History'] = $history;
 
 		if($this->Item->saveAll($newItemInsert)) {
 			if(isset($newItemInsert["Item"]["checklist_id"]))
@@ -680,13 +679,15 @@ class ItemsController extends AppController {
 						"joins" =>$this->paginate["joins"],
 						"group"=>$this->Paginator->settings["group"]
 						));
+			#debug($currentCount);
 			#$this->_runtime("First count");
 			$countfilter['show_all'] = 1;
 			$count = $this->ItemView->find('count', array(
-						'conditions' => $this->Search->getItemConditions($countfilter, 'ItemView',$this->paginate["joins"]),
+						'conditions' => $this->Search->getItemConditions($countfilter, 'ItemView', $this->paginate["joins"]),
 						"joins" =>$this->paginate["joins"],
 						"group"=>$this->Paginator->settings["group"]
 						));
+			#debug($count);
 			#$this->_runtime("Second count");
 
 			if($count-($currentCount) > 0)
