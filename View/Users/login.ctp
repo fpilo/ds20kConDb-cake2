@@ -56,7 +56,4 @@ Please install a Browser with Javascript support or activate Javascript.</h5>
 	?>
 </div>
 <hr>
-<span style="font-family:Verdana,Wide Latin; font-size:1.0em; color: #aaa">
-For account requests please contact <a href="javascript:linkTo_UnCryptMailto('nbjmup;Uipnbt/CfshbvfsApfbx/bd/bu');" style="font-family:Verdana,Wide Latin; font-size:1.0em; color: #aaa">Thomas Bergauer, Thomas [dot] Bergauer [at] oeaw [dot] ac [dot] at</a>
-</span> 
 <!--<h3>Server closed for maintenance work.</h3>-->
