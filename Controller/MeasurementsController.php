@@ -181,6 +181,7 @@ class MeasurementsController extends AppController {
 	* @return void
 	*/
 	public function view($id = null) {
+		
 		//Check if Measurement exists
 		$this->Measurement->id = $id;
 		if (!$this->Measurement->exists()) {

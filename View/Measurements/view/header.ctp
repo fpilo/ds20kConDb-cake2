@@ -1,6 +1,6 @@
 <?php
 	$this->Html->addCrumb('Measurements', '/measurements');
-	$this->Html->addCrumb('View', '/measurements/view/'.$measurement['Measurement']['id']);
+	$this->Html->addCrumb('Measurement #'.$measurement['Measurement']['id'].' View', '/measurements/view/'.$measurement['Measurement']['id']);
 	$plotLoaded = false;
 ?>
 

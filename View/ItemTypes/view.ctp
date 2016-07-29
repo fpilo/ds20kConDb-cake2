@@ -1,7 +1,8 @@
 <?php
-	// $this->Html->addCrumb('Item Types', '/item_types/index/');
+	$this->Html->addCrumb('Item Types', '/item_types/index/');
 	$this->Html->addCrumb($itemType['ItemType']['name'], '/item_types/view/'.$itemType['ItemType']['id']);
 ?>
+
 <script type="text/javascript">
 			$(function(){
 				restoreTabs('itemTypesTabIndex');

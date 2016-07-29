@@ -2,7 +2,7 @@
 	foreach($item["CompositeItemChain"] as $crumb){
 		$this->Html->addCrumb($crumb['code'], '/items/view/'.$crumb['id']);
 	}
-	$this->Html->addCrumb($item['Item']['code'], '/items/view/'.$item['Item']['id']);
+	$this->Html->addCrumb('Item '.$item['Item']['code'].' View', '/items/view/'.$item['Item']['id']);
 
 ?>
 

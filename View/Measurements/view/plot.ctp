@@ -7,6 +7,7 @@
 	<?php echo $this->Html->script("flot/jquery.flot.axislabels.js"); //Currently breaks the display/hide functionality of the plots ?>
 	<?php echo $this->Html->script("flot/jquery.flot.resize.js"); ?>
 <?php endif; ?>
+
 <style type="text/css">
 .plot-container {
 	float:left;
@@ -50,6 +51,7 @@
 </style>
 
 <script type="text/javascript">
+
 	var plot = null;
 	var overview = null;
 	var plotTypeX  = "nothing";
@@ -67,25 +69,26 @@
 	var yAxis2 = null;
 	
 	Math.log10 = function(v){
-			if(v<0){
-				return 0;
-			}else{
-				return Math.log(v) / Math.LN10;
-			}
+		if(v<0){
+			return 0;
+		}else{
+			return Math.log(v) / Math.LN10;
 		}
-	// var modReverse = {
-		// nothing: function(v){return v;},
-		// invert: function(v){ v = parseFloat(v); return -v;},
-		// abs: function(v){ v = parseFloat(v); return Math.abs(v);},
-		// square: function(v){ v = parseFloat(v); return Math.sqrt(v);},
-		// inverse: function(v){ v = parseFloat(v); return v==0 ? null: (1/v);},
-		// log: function(v){ v = parseFloat(v); return Math.pow(10,v);},
-		// sqroot: function(v){ v = parseFloat(v); return v <0 ? null: Math.pow(v,2)},
-		// inverseSquare: function(v){
-			// return mod.sqroot(mod.inverse(v));
-			// },
-	// }
-
+	}
+	
+	/*var modReverse = {
+		nothing: function(v){return v;},
+		invert: function(v){ v = parseFloat(v); return -v;},
+		abs: function(v){ v = parseFloat(v); return Math.abs(v);},
+		square: function(v){ v = parseFloat(v); return Math.sqrt(v);},
+		inverse: function(v){ v = parseFloat(v); return v==0 ? null: (1/v);},
+		log: function(v){ v = parseFloat(v); return Math.pow(10,v);},
+		sqroot: function(v){ v = parseFloat(v); return v <0 ? null: Math.pow(v,2)},
+		inverseSquare: function(v){
+		 return mod.sqroot(mod.inverse(v));
+		 },
+		}*/
+	
 	var mod = {
 		nothing: function(v){return v;},
 		invert: function(v){ v = parseFloat(v); return -v;},
@@ -96,9 +99,11 @@
 		sqroot: function(v){ v = parseFloat(v); return v <0 ? null: Math.sqroot(v)},
 		inverseSquare: function(v){
 			return mod.inverse(mod.square(v));
-			},
+		},
 	}
+	
 	var data = [];
+	
 	var options = {
       series: {
          bars: {
@@ -154,6 +159,7 @@
 		}
 		return copy;
 	}
+	
 	function conversionHook(plot,series,datapoints){
 		if(series.yaxis.n == 1){
 			plotType = plotTypeY1;
@@ -188,40 +194,39 @@
 		}
 	}
 
-	togglePlot = function(seriesIdx)
-		{
-			var someData = plot.getData();
-         //console.log(someData[seriesIdx].points);
-			someData[seriesIdx].lines.show = !someData[seriesIdx].lines.show;
-			plotMainPlot(someData,true);
-		}
+	togglePlot = function(seriesIdx){
+		var someData = plot.getData();
+			 //console.log(someData[seriesIdx].points);
+		someData[seriesIdx].lines.show = !someData[seriesIdx].lines.show;
+		plotMainPlot(someData,true);
+	}
 
-	reverseTogglePlot = function(seriesIdx)
-		{
-			var someData = plot.getData();
-         //console.log(someData[seriesIdx].lines);
-			for(var i=0; i<someData.length;i++){
-				someData[i].lines.show = i==seriesIdx?true:false;
-			}
-			plotMainPlot(someData,true);
+	reverseTogglePlot = function(seriesIdx){
+		var someData = plot.getData();
+			 //console.log(someData[seriesIdx].lines);
+		for(var i=0; i<someData.length;i++){
+			someData[i].lines.show = i==seriesIdx?true:false;
 		}
+		plotMainPlot(someData,true);
+	}
 
-   function updateXMinMax() {
-      min = $("input#xmin").val();
-      max = $("input#xmax").val();
-      plot.getOptions().xaxes[0].min = min;
-      plot.getOptions().xaxes[0].max = max;
-      plot.setupGrid();
-      plot.draw();
-   }
-   function updateYMinMax(which) {
-      min = $("input#ymin"+which).val();
-      max = $("input#ymax"+which).val();
-      plot.getOptions().yaxes[which].min = min;
-      plot.getOptions().yaxes[which].max = max;
-      plot.setupGrid();
-      plot.draw();
-   }
+	function updateXMinMax() {
+		min = $("input#xmin").val();
+		max = $("input#xmax").val();
+		plot.getOptions().xaxes[0].min = min;
+		plot.getOptions().xaxes[0].max = max;
+		plot.setupGrid();
+		plot.draw();
+	}
+	 
+	function updateYMinMax(which) {
+		min = $("input#ymin"+which).val();
+		max = $("input#ymax"+which).val();
+		plot.getOptions().yaxes[which].min = min;
+		plot.getOptions().yaxes[which].max = max;
+		plot.setupGrid();
+		plot.draw();
+	}
 
 	function setPlotType(type,axis){
 		if(axis == 0){
@@ -254,10 +259,9 @@
 		options["yaxes"][axis].tickFormatter = niceLabelFormat;
 	}
 
-
 	function yAxisLogOn(axis){
 		console.log("activating log");
-      options["yaxes"][axis].transform = mod["log"];
+    options["yaxes"][axis].transform = mod["log"];
       // options["yaxis"].tickFormatter = function(v,axis){
 			// return niceLabelFormat(mod["log"](v),axis);
 		// }
@@ -267,7 +271,7 @@
 		setPlotType("nothing",0);
 		setPlotType("nothing",1);
 		setPlotType("nothing",2);
-		return 
+		return;
 	}
 
 	function toggleLog(axis){
@@ -285,15 +289,17 @@
 		hideLegend = !hideLegend;
 		onDataReceivedReplace(data,true);
 	}
-   function toggleBars() {
-      plot.getOptions().series.bars.show = !plot.getOptions().series.bars.show;
-      if(plot.getOptions().series.bars.show) {
-         tmp = {series:{bars:{show:true}}};
-      } else {
-         tmp = {series:{lines:{show:true}}};
-      }
-      $.plot($('#placeholder'), data, tmp);
-   }
+	
+	function toggleBars() {
+		plot.getOptions().series.bars.show = !plot.getOptions().series.bars.show;
+		if(plot.getOptions().series.bars.show) {
+			 tmp = {series:{bars:{show:true}}};
+		} else {
+			 tmp = {series:{lines:{show:true}}};
+		}
+		$.plot($('#placeholder'), data, tmp);
+	}
+	 
 	function plotMainPlot(data,keepZoomStatus){
 		options.legend.show = !hideLegend;
 		options.points.radius = 3;
@@ -322,6 +328,7 @@
 	}
 
 	function plotData(data,keepAxis){
+	
 		if(keepAxis == undefined){
 			keepAxis = false;
 		}
@@ -366,6 +373,7 @@
 	}
 
 	$(function() {
+
 		$("input[name=xCalc]:radio").change(function(){
 			setPlotType($(this).val(),0);
 		});
@@ -377,6 +385,7 @@
 		});
 
 		plotData(data);
+		
 		$("#plot_output").resizable({
 			maxWidth: 900,
 			maxHeight: 500,
@@ -434,13 +443,15 @@
 						alert(result.message);
 					}
 				});
+				
 			}
 		});
 
-		$("#measurement_header").append($("#plot_control").fadeIn(500));
-		$("#measurement_header").append($("#plot_output").fadeIn(500));
-		$("#measurement_header").append($("#plot_selection").fadeIn(500));
+		$("#plots").append($("#plot_control").fadeIn(500));
+		$("#plots").append($("#plot_output").fadeIn(500));
+		$("#plots").append($("#plot_selection").fadeIn(500));
 	});
+	
 	var overlayCloseButton = '<div style="float: right;"><?php echo $this->Html->image("ElegantBlueWeb/xmark.png",array("alt"=>"X","width"=>"20","onClick"=>"closeSelectorOverlay();","style"=>"cursor:pointer; z-index:5;")); ?></div>';
 
 	function createPlotButton(){
@@ -484,6 +495,7 @@
 		}
 		return false
 	}
+	
 	function onDataReceivedReplace(series,keepAxis) {
 		if(keepAxis == undefined){
 			keepAxis = false;
@@ -501,6 +513,7 @@
 		// setMinMax(somePlot.getAxes()["yaxis"].datamin,somePlot.getAxes()["yaxis"].datamax);
 		// plotWithoutMinMaxCalculation();
 	}
+	
 	function onDataReceivedAdd(series,keepAxis) {
 		if(keepAxis == undefined){
 			keepAxis = false;
@@ -684,8 +697,9 @@
 	}
 
 </script>
+
 <div id="plot_control" style="width:250px; min-height:240px; margin:10px; float:left; display:none;">
-		<table>
+	<table>
 			<tr><td><?php echo __('X-Axis (Right click)'); ?></td><td colspan="2" id="x_axis_selection">none</td></tr>
 			<tr><td><?php echo __('Y-Axis (Left click)'); ?></td><td colspan ="2" id="y_axis_selection">none</td></tr>
 			<tr>
@@ -722,19 +736,20 @@
 				</td>
 			</tr>
 		</table>
-<!--	<input type='radio' value="square" name="yCalc" id="calcSquare"/><label for="calcSquare">y = y^2</label><br />
+	<!--	<input type='radio' value="square" name="yCalc" id="calcSquare"/><label for="calcSquare">y = y^2</label><br />
 		<input type='radio' value="inverse" name="yCalc" id="calcInverse"/><label for="calcInverse">y = 1/y</label><br />
 		<input type='radio' value="invert" name="yCalc" id="calcInvert"/><label for="calcInvert">y = -y</label><br />-->
 	<!-- // <label for="plotMax">Plot Maximum: <input type="number" step="0.0001" value="0.0000" name="plotMax" id="plotMax" onchange='triggerMinMaxChange($("#plotMin").val(),$(this).val())' /></label>
 	// <label for="plotMax">Plot Minimum: <input type="number" step="0.0001" value="0.0000" name="plotMin" id="plotMin" onchange='triggerMinMaxChange($(this).val(),$("#plotMax").val())' /></label> -->
 </div>
+
 <div id='plot_output' class='plot-container' style='display:none;'>
 	<div id="placeholder" class='plot-placeholder' style="width:70%; height:90%; float:left; "></div>
 	<div id='overview' class='plot-placeholder' style='float:right; width:30%; height:39%;'></div>
 	Drag to select area of interest on either of the plots. <br />Doubleclick on the main plot to reset the selection.
 </div>
+
 <div id='plot_selection' style="float: right; ">
 	<input type="button" value="Add Measurement" onclick="openSelectorOverlay('<?php echo $this->Html->url(array("controller"=>"measurements","action"=>"getSimilarMeasurements",$measurement["Measurement"]["id"])) ?>',$(this).offset())" /><br />
-	
-To add another column of the same measurement just left-click on the column name. 
+	To add another column of the same measurement just left-click on the column name. 
 </div>

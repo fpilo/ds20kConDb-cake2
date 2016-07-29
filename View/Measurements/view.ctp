@@ -1,6 +1,7 @@
 <?php require(dirname(__FILE__).'/view/header.ctp'); ?>
 </div>
 <?php require(dirname(__FILE__).'/view/menu.ctp'); ?>
+
 <div class="related view">
 	<?php
 		if($measurementQueueStatus == 3):
